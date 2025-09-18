@@ -20,7 +20,7 @@ Currently, defineutils contains 2 modules, one for generating an HTML rendition 
 Example code used to generate a define.html from a define.xml:
 ```python
 from pathlib import Path
-from definehtml.definehtml import DefineHtml, DefineHtmlGenerationError
+from definehtml import DefineHtml, DefineHtmlGenerationError
 
 out_file = Path(__file__).parent.joinpath("define.html")
 dh = DefineHtml(Path(__file__).parent.joinpath("define.xml"))
@@ -33,7 +33,7 @@ stylesheet is embedded in the module. For error handling, use the custom DefineH
 Example code used to schema validate a define.xml:
 ```python
 from pathlib import Path
-from validate.validate import DefineSchemaValidator, DefineSchemaValidationError
+from validate import DefineSchemaValidator, DefineSchemaValidationError
 
 validator = DefineSchemaValidator(Path(__file__).parent.joinpath("define.xml"))
 try:
