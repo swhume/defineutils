@@ -50,7 +50,7 @@ The schema validation errors are reported via the DefineSchemaValidationError ex
 When you run a module with the -m switch it will execute the defineutils modules from the command-line. For example,
 to transform a define.xml file into HTML using the stylesheet, the following command-line example executes the module
 to generate define.html. The -m parameter instructs Python to run the module as an application. The definehtml program
-uses the -d parameter to specify the define.xml file path, and the -o to specify the define.html file path.
+uses the -d parameter to specify the define.xml file path and the -o to specify the define.html file path.
 
 ```commandline
  python3 -m definehtml -d tests/define.xml -o tests/define.html
@@ -60,5 +60,13 @@ The validate command can be executed using the command-line the same way. For va
 required to indicate the file path of the define.xml to validate.
 
 ```commandline
+python3 -m validate -d tests/define.xml
+```
+
+If you are running defineutils from the source code using a virtual environment, you may need to activate that virtual
+environment before running the code from the command-line. 
+
+```commandline
+source .venv/bin/activate
 python3 -m validate -d tests/define.xml
 ```
