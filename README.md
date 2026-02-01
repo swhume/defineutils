@@ -20,7 +20,7 @@ Currently, defineutils contains 2 modules, one for generating an HTML rendition 
 Example code used to generate a define.html from a define.xml:
 ```python
 from pathlib import Path
-from definehtml import DefineHtml, DefineHtmlGenerationError
+from defineutils.definehtml import DefineHtml, DefineHtmlGenerationError
 
 out_file = Path(__file__).parent.joinpath("define.html")
 dh = DefineHtml(Path(__file__).parent.joinpath("define.xml"))
@@ -33,7 +33,7 @@ stylesheet is embedded in the module. For error handling, use the custom DefineH
 Example code used to schema validate a define.xml:
 ```python
 from pathlib import Path
-from validate import DefineSchemaValidator, DefineSchemaValidationError
+from defineutils.validate import DefineSchemaValidator, DefineSchemaValidationError
 
 validator = DefineSchemaValidator(Path(__file__).parent.joinpath("define.xml"))
 try:
@@ -53,20 +53,20 @@ to generate define.html. The -m parameter instructs Python to run the module as 
 uses the -d parameter to specify the define.xml file path and the -o to specify the define.html file path.
 
 ```commandline
- python3 -m definehtml -d tests/define.xml -o tests/define.html
+python3 -m defineutils.definehtml -d tests/define.xml -o tests/define.html
 ```
 
 The validate command can be executed using the command-line the same way. For validate, only the -d parameter is 
 required to indicate the file path of the define.xml to validate.
 
 ```commandline
-python3 -m validate -d tests/define.xml
+python3 -m defineutils.validate -d tests/define.xml
 ```
 
 If you are running defineutils from the source code using a virtual environment, you may need to activate that virtual
-environment before running the code from the command-line. 
+environment before running the code from the command-line.
 
 ```commandline
 source .venv/bin/activate
-python3 -m validate -d tests/define.xml
+python3 -m defineutils.validate -d tests/define.xml
 ```

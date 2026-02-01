@@ -53,14 +53,13 @@ class DefineHtml:
             xsl_tree = etree.parse(self.xslt)
             transform = etree.XSLT(xsl_tree)
             result_tree = transform(xml_tree)
-        except etree.XMLSyntaxError as e:
-            raise DefineHtmlGenerationError(f"XML syntax error:\n{e}")
-        except etree.ParseError as e:
-            raise DefineHtmlGenerationError(f"XML parsing error:\n{e}")
-        except etree.XSLTApplyError as e:
-            raise DefineHtmlGenerationError(f"XSLT apply error:\n{e}")
-        finally:
-            return result_tree
+        except etree.XMLSyntaxError:
+            return None
+        except etree.ParseError:
+            return None
+        except etree.XSLTApplyError:
+            return None
+        return result_tree
 
     def _does_define_file_exist(self):
         """

@@ -1,8 +1,7 @@
 from pathlib import Path
 import pytest
 
-from definehtml.definehtml import DefineHtml
-from definehtml.definehtml import DefineHtmlGenerationError
+from defineutils.definehtml import DefineHtml, DefineHtmlGenerationError
 
 
 def data_path() -> Path:
@@ -56,7 +55,7 @@ def test_transform_handles_invalid_xml(tmp_path: Path, monkeypatch):
     dh = DefineHtml.__new__(DefineHtml)
     # Bypass __init__ file-exists guard so we can inject our path
     dh.define = bad_xml
-    dh.xslt = Path(__file__).parent.parent / "definehtml" / "define2-1.xsl"
+    dh.xslt = Path(__file__).parent.parent / "defineutils" / "definehtml" / "define2-1.xsl"
 
     # Act
     result = dh.transform_to_html_string()

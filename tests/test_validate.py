@@ -1,7 +1,7 @@
 from pathlib import Path
 import pytest
 
-from validate.validate import DefineSchemaValidator, DefineSchemaValidationError
+from defineutils.validate import DefineSchemaValidator, DefineSchemaValidationError
 
 
 def test_validate_define_xml_success():

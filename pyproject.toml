@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "defineutils"
-version = "0.1.1"
+version = "0.2.0"
 description = "CDISC Define-XML v2.1 utilities"
 readme = "README.md"
 authors = [{ name = "Sam Hume", email = "swhume@gmail.com" }]
@@ -27,12 +27,12 @@ requires-python = ">=3.10"
 Homepage = "https://github.com/swhume/defineutils"
 
 [tool.setuptools]
-packages = ["definehtml", "validate"]
+packages = ["defineutils", "defineutils.definehtml", "defineutils.validate"]
 
 [tool.setuptools.package-data]
 # Include non-Python files needed at runtime (schemas, XSL)
-"definehtml" = ["define2-1.xsl", "define2-1.xsl.LICENSE"]
-"validate" = [
+"defineutils.definehtml" = ["define2-1.xsl", "define2-1.xsl.LICENSE"]
+"defineutils.validate" = [
   "schema/cdisc-arm-1.0/*.xsd",
   "schema/cdisc-define-2.1/*.xsd",
   "schema/cdisc-define-2.1/*.html",
