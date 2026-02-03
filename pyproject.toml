@@ -4,13 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "defineutils"
-version = "0.2.0"
+version = "0.2.1"
 description = "CDISC Define-XML v2.1 utilities"
 readme = "README.md"
 authors = [{ name = "Sam Hume", email = "swhume@gmail.com" }]
-license = { file = "LICENSE" }
+license = "MIT"
 classifiers = [
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
 ]

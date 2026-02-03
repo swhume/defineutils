@@ -359,7 +359,7 @@
 
           <li class="hmenu-submenu">
             <span onclick="toggle_submenu(this);" class="hmenu-bullet">+</span>
-            <a class="tocItem">Supplemental Documents</a>
+            <span class="tocItem">Supplemental Documents</span>
             <ul>
               
               <xsl:for-each select="$g_MetaDataVersion/def:SupplementalDoc/def:DocumentRef">
@@ -411,13 +411,12 @@
       	<xsl:if test="/odm:ODM/odm:Study/odm:MetaDataVersion/arm:AnalysisResultDisplays">
       		<li class="hmenu-submenu" >
       			<span class="hmenu-bullet" onclick="toggle_submenu(this);">+</span>
-      			<a class="tocItem" href="#ARM_Table_Summary" >Analysis Results Metadata</a>
+      			<span class="tocItem">Analysis Results Metadata</span>
       			<ul> 
       				<xsl:for-each select="/odm:ODM/odm:Study/odm:MetaDataVersion/arm:AnalysisResultDisplays/arm:ResultDisplay">
       					<li class="hmenu-item">
       						<span class="hmenu-bullet">-</span>
-      						<a class="tocItem">
-      						  <xsl:attribute name="href">#ARD.<xsl:value-of select="@OID"/></xsl:attribute>
+      						<a class="tocItem" href="#ARD.{@OID}">
       						  <xsl:attribute name="title"><xsl:value-of select="./odm:Description/odm:TranslatedText"/></xsl:attribute>
       						  <xsl:value-of select="@Name"/>
       						</a>
@@ -437,8 +436,7 @@
             <xsl:for-each select="$g_seqItemGroupDefs">
               <li class="hmenu-item">
                 <span class="hmenu-bullet">-</span>
-                <a class="tocItem">
-                  <xsl:attribute name="href">#IG.<xsl:value-of select="@OID"/></xsl:attribute>
+                <a class="tocItem" href="#IG.{@OID}">
                   <xsl:value-of select="concat(@Name, ' (',./odm:Description/odm:TranslatedText, ')')"/>
                 </a>
               </li>
@@ -457,13 +455,12 @@
               <xsl:if test="$g_seqCodeLists[odm:CodeListItem|odm:EnumeratedItem]">
                 <li class="hmenu-submenu">
                   <span class="hmenu-bullet" onclick="toggle_submenu(this);">+</span>
-                  <a class="tocItem" href="#decodelist">CodeLists</a>
+                  <span class="tocItem">CodeLists</span>
                   <ul>
                     <xsl:for-each select="$g_seqCodeLists[odm:CodeListItem|odm:EnumeratedItem]">
                       <li class="hmenu-item">
                         <span class="hmenu-bullet">-</span>
-                        <a class="tocItem">
-                          <xsl:attribute name="href">#CL.<xsl:value-of select="@OID"/></xsl:attribute>
+                        <a class="tocItem" href="#CL.{@OID}">
                           <xsl:value-of select="@Name"/>
                         </a>
                       </li>
@@ -478,13 +475,12 @@
               <xsl:if test="$g_seqCodeLists[odm:ExternalCodeList]">
                 <li class="hmenu-submenu">
                   <span class="hmenu-bullet" onclick="toggle_submenu(this);">+</span>
-                  <a class="tocItem" href="#externaldictionary">External Dictionaries</a>
+                  <span class="tocItem">External Dictionaries</span>
                   <ul>
                     <xsl:for-each select="$g_seqCodeLists[odm:ExternalCodeList]">
                       <li class="hmenu-item">
                         <span class="hmenu-bullet">-</span>
-                        <a class="tocItem">
-                          <xsl:attribute name="href">#CL.<xsl:value-of select="@OID"/></xsl:attribute>
+                        <a class="tocItem" href="#CL.{@OID}">
                           <xsl:value-of select="@Name"/>
                         </a>
                       </li>
@@ -505,13 +501,12 @@
           <xsl:if test="$g_seqMethodDefs">
             <li class="hmenu-submenu">
               <span class="hmenu-bullet" onclick="toggle_submenu(this);">+</span>
-              <a class="tocItem" href="#compmethod">Methods</a>
+              <span class="tocItem">Methods</span>
               <ul>
                 <xsl:for-each select="$g_seqMethodDefs">
                   <li class="hmenu-item">
                     <span class="hmenu-bullet">-</span>
-                    <a class="tocItem">
-                      <xsl:attribute name="href">#MT.<xsl:value-of select="@OID"/></xsl:attribute>
+                    <a class="tocItem" href="#MT.{@OID}">
                       <xsl:value-of select="@Name"/>
                     </a>
                   </li>
@@ -528,13 +523,12 @@
           <xsl:if test="$g_seqCommentDefs">
             <li class="hmenu-submenu">
               <span class="hmenu-bullet" onclick="toggle_submenu(this);">+</span>
-              <a class="tocItem" href="#comment">Comments</a>
+              <span class="tocItem">Comments</span>
               <ul>
                 <xsl:for-each select="$g_seqCommentDefs">
                   <li class="hmenu-item">
                     <span class="hmenu-bullet">-</span>
-                    <a class="tocItem">
-                      <xsl:attribute name="href">#COMM.<xsl:value-of select="@OID"/></xsl:attribute>
+                    <a class="tocItem" href="#COMM.{@OID}">
                       <xsl:value-of select="@OID"/>
                     </a>
                   </li>
@@ -1174,7 +1168,7 @@
   <!-- **************************************************** -->
   <xsl:template name="tableItemGroups">
 
-    <a id="datasets"/>
+    <span id="datasets"/>
     
     <h1 class="invisible">Datasets</h1>
     <div class="containerbox">
@@ -1315,7 +1309,7 @@
   <!-- ************************************************************ -->
   <xsl:template name="tableItemDefs">
 
-    <a id="IG.{@OID}"/>
+    <span id="IG.{@OID}"/>
     <div class="containerbox">
 
       <h1 class="invisible">
@@ -1427,12 +1421,7 @@
                       <xsl:element name="span">
                         <xsl:attribute name="class"><xsl:text>valuelist-reference</xsl:text></xsl:attribute>
                         <xsl:attribute name="onclick"><xsl:value-of select="concat('toggle_vlm(this)', ';')"/></xsl:attribute>
-                        <a>
-                          <xsl:attribute name="id">
-                            <xsl:value-of select="../@OID"/>.<xsl:value-of select="$ItemDef/@OID"/>
-                          </xsl:attribute>
-                          <xsl:text>VLM</xsl:text>
-                        </a>
+                        <span id="{../@OID}.{$ItemDef/@OID}">VLM</span>
                       </xsl:element>
                     </xsl:when>
                     <xsl:otherwise>
@@ -1449,11 +1438,7 @@
                   <xsl:choose>
                   <xsl:when test="$ItemDef">
                   <!-- Make unique anchor link to Variable Name -->
-                  <a>
-                    <xsl:attribute name="id">
-                      <xsl:value-of select="../@OID"/>.<xsl:value-of select="$ItemDef/@OID"/>
-                    </xsl:attribute>
-                  </a>
+                  <span id="{../@OID}.{$ItemDef/@OID}"></span>
                   <xsl:value-of select="$ItemDef/@Name"/>
                   </xsl:when>
                   <xsl:otherwise>
@@ -1784,7 +1769,7 @@
 
     <xsl:if test="$g_seqCodeLists[odm:CodeListItem|odm:EnumeratedItem]">
 
-      <a id="decodelist"/>
+      <span id="decodelist"/>
       <div class="containerbox">
         <h1 class="header">CodeLists</h1>
 
@@ -2006,7 +1991,7 @@
 
     <xsl:if test="$g_seqCodeLists[odm:ExternalCodeList]">
 
-      <a id="externaldictionary"/>
+      <span id="externaldictionary"/>
       <h1 class="invisible">External Dictionaries</h1>
       <div class="containerbox">
 
@@ -2065,11 +2050,7 @@
                 <xsl:choose>
                   <xsl:when test="@ref">
                     <xsl:text> (</xsl:text>
-                    <xsl:call-template name="displayHyperlink">
-                      <xsl:with-param name="href" select="@ref"/>
-                      <xsl:with-param name="anchor" select="''"/>
-                      <xsl:with-param name="title" select="@ref"/>
-                    </xsl:call-template>
+                    <xsl:value-of select="@ref"/>
                     <xsl:text>)</xsl:text>
                   </xsl:when>
                   <xsl:otherwise>
@@ -2096,7 +2077,7 @@
 
     <xsl:if test="$g_seqMethodDefs">
 
-      <a id="compmethod"/>
+      <span id="compmethod"/>
       <div class="containerbox">
 
         <h1 class="invisible">Methods</h1>
@@ -2114,7 +2095,6 @@
 
             <xsl:element name="tr">
 
-              <!-- Create an anchor -->
               <xsl:attribute name="id">MT.<xsl:value-of select="@OID"/></xsl:attribute>
 
               <xsl:call-template name="setRowClassOddeven">
@@ -2168,7 +2148,7 @@
 
     <xsl:if test="$g_seqCommentDefs">
 
-      <a id="comment"/>
+      <span id="comment"/>
       <div class="containerbox">
         <h1 class="invisible">Comments</h1>
 
@@ -2514,7 +2494,7 @@
     <xsl:param name="title"/>
     <!-- create the hyperlink itself -->
     <xsl:choose>
-      <xsl:when test="$href">
+      <xsl:when test="string-length($href) > 0">
         <a class="external">
           <xsl:attribute name="href">
             <xsl:value-of select="concat($href, $anchor)"/>
@@ -2526,8 +2506,6 @@
       </xsl:when>
       <xsl:otherwise>
         <xsl:value-of select="$title"/>
-        <xsl:call-template name="displayImage" />
-        <xsl:text> </xsl:text>
       </xsl:otherwise>
     </xsl:choose>
   </xsl:template>
