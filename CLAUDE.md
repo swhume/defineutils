@@ -4,9 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-defineutils is a Python package for working with CDISC Define-XML v2.1 files. It provides two modules:
+defineutils is a Python package for working with CDISC Define-XML v2.1 files. It provides three modules:
 - **definehtml**: Transforms define.xml files to HTML using an embedded XSL stylesheet
 - **validate**: Schema validates define.xml files using embedded XSD schemas
+- **definepp**: Pretty-prints (re-indents) define.xml files
 
 ## Commands
 
@@ -32,6 +33,9 @@ python -m defineutils.definehtml -d tests/define.xml -o tests/define.html
 
 # Schema validate a define.xml
 python -m defineutils.validate -d tests/define.xml
+
+# Pretty-print a define.xml to a file (omit -o to print to the console; -H limits console lines)
+python -m defineutils.definepp -d tests/define.xml -o tests/define.pretty.xml
 ```
 
 ## Architecture
@@ -49,4 +53,6 @@ Each submodule follows the same pattern:
 
 **validate module**: Uses xmlschema for validation. The `DefineSchemaValidator` class validates against bundled Define-XML v2.1 schemas in `defineutils/validate/schema/`. Returns success message or raises `DefineSchemaValidationError` with details.
 
-Both modules bundle their required resources (XSL stylesheet, XSD schemas) to simplify usage.
+**definepp module**: Uses lxml to re-indent a define.xml. The `DefinePrettyPrinter` class parses with `remove_blank_text=True` and serializes with `pretty_print=True`, a byte-preserving reformat (comments, processing instructions, order and namespaces are retained). It outputs via `pretty_print_to_file()`, `pretty_print_to_string()`, or `pretty_print_to_console()` (with an optional line limit for paging), and raises `DefinePrettyPrintError`. This module bundles no resources.
+
+The definehtml and validate modules bundle their required resources (XSL stylesheet, XSD schemas) to simplify usage.
