@@ -26,7 +26,7 @@ requires-python = ">=3.10"
 Homepage = "https://github.com/swhume/defineutils"
 
 [tool.setuptools]
-packages = ["defineutils", "defineutils.definehtml", "defineutils.validate"]
+packages = ["defineutils", "defineutils.definehtml", "defineutils.validate", "defineutils.definepp"]
 
 [tool.setuptools.package-data]
 # Include non-Python files needed at runtime (schemas, XSL)

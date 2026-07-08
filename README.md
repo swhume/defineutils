@@ -2,9 +2,10 @@
 
 ## CDISC Define-XML v2.1 utilities
 
-The defineutils package currently includes 2 modules:
+The defineutils package currently includes 3 modules:
 1. `definehtml.py`: transforms a define.xml into a define.html using the stylesheet
 2. `validate.py`: schema validates a define.xml file
+3. `definepp.py`: pretty-prints (re-indents) a define.xml file
 
 The `definehtml.py` module includes the Define-XML v2.1 style sheet to simplify usage. It generates a define.html file,
 or alternatively will generate an HTML string.
@@ -13,9 +14,14 @@ The `validate.py` module includes the Define-XML v2.1 schema to simplify usage. 
 and returns a define.xml is valid message to indicate success, or a detailed message documenting the schema validation
 issues.
 
+The `definepp.py` module pretty-prints a define.xml file. The reformat is byte-preserving apart from whitespace:
+comments, processing instructions, element/attribute order and namespaces are all retained. It writes the formatted
+define.xml to a file, or, if no output file is given, to the console where it can be paged with a tool like `more`.
+
 ## Using defineutils
 
-Currently, defineutils contains 2 modules, one for generating an HTML rendition and one for schema validation.
+Currently, defineutils contains 3 modules: one for generating an HTML rendition, one for schema validation, and one
+for pretty-printing.
 
 Example code used to generate a define.html from a define.xml:
 ```python
@@ -45,6 +51,22 @@ except DefineSchemaValidationError as e:
 The above code schema validates the specified define.xml file. The Define-XML v2.1 schema is embedded into the module.
 The schema validation errors are reported via the DefineSchemaValidationError exception.
 
+Example code used to pretty-print a define.xml:
+```python
+from pathlib import Path
+from defineutils.definepp import DefinePrettyPrinter, DefinePrettyPrintError
+
+pp = DefinePrettyPrinter(Path(__file__).parent.joinpath("define.xml"))
+try:
+    pp.pretty_print_to_file(Path(__file__).parent.joinpath("define.pretty.xml"))
+except DefinePrettyPrintError as e:
+    print(e)
+```
+
+The above code re-indents the define.xml and writes the formatted result to define.pretty.xml. Use
+`pretty_print_to_string()` to get the formatted XML as a string, or `pretty_print_to_console()` to write it to
+stdout. Errors, including malformed XML, are reported via the DefinePrettyPrintError exception.
+
 ## Running defineutils from the Command-line
 
 When you run a module with the -m switch it will execute the defineutils modules from the command-line. For example,
@@ -61,6 +83,22 @@ required to indicate the file path of the define.xml to validate.
 
 ```commandline
 python3 -m defineutils.validate -d tests/define.xml
+```
+
+The definepp command pretty-prints a define.xml. Use the -d parameter to specify the define.xml file path and the -o
+parameter to specify the formatted output file path. If no -o is given, the formatted define.xml is written to the
+console, which can be paged with a tool like `more`. When printing to the console, the -H parameter limits the number
+of lines shown.
+
+```commandline
+# write the formatted define.xml to a file
+python3 -m defineutils.definepp -d tests/define.xml -o tests/define.pretty.xml
+
+# print the formatted define.xml to the console, one screen at a time
+python3 -m defineutils.definepp -d tests/define.xml | more
+
+# print only the first 40 lines to the console
+python3 -m defineutils.definepp -d tests/define.xml -H 40
 ```
 
 If you are running defineutils from the source code using a virtual environment, you may need to activate that virtual
