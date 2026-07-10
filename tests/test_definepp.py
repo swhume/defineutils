@@ -143,8 +143,10 @@ def test_console_broken_pipe_exits_cleanly():
 
 def test_console_ctrl_c_exits_cleanly():
     # Ctrl-C while paging sends SIGINT to the writer, which raises KeyboardInterrupt
-    # mid-write; the CLI should exit 130 quietly with no traceback. The read end stays
-    # open so the interrupt (not a broken pipe) is what ends the process.
+    # mid-write; the CLI should exit quietly with no traceback. The read end stays open
+    # so the interrupt (not a broken pipe) is what ends the process. On POSIX the CLI
+    # re-raises SIGINT so it dies *by* the signal (returncode -SIGINT) to keep the shell
+    # prompt clean; elsewhere it exits 130.
     p = _run_pp_console()
     try:
         p.stdout.readline()          # read one line so the writer blocks on a full pipe
@@ -158,7 +160,7 @@ def test_console_ctrl_c_exits_cleanly():
         p.stdout.close()
         p.stderr.close()
 
-    assert rc == 130
+    assert rc in (-signal.SIGINT, 130)
     assert b"Traceback" not in err
     assert b"KeyboardInterrupt" not in err
     assert b"BrokenPipeError" not in err
