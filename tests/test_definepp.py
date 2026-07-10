@@ -1,3 +1,7 @@
+import signal
+import subprocess
+import sys
+import time
 from pathlib import Path
 import pytest
 from lxml import etree
@@ -7,6 +11,18 @@ from defineutils.definepp import DefinePrettyPrinter, DefinePrettyPrintError
 
 def data_path() -> Path:
     return Path(__file__).parent
+
+
+def _run_pp_console() -> subprocess.Popen:
+    """Launch `python -m defineutils.definepp -d tests/define.xml` with stdout/stderr piped.
+    Run from the repo root so the package resolves whether or not it is installed."""
+    define_file = data_path() / "define.xml"
+    return subprocess.Popen(
+        [sys.executable, "-m", "defineutils.definepp", "-d", str(define_file)],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        cwd=str(data_path().parent),
+    )
 
 
 def test_pretty_print_to_string_basic():
@@ -103,3 +119,46 @@ def test_pretty_print_to_file_errors_graceful(tmp_path: Path):
     # writing to a directory path triggers the IsADirectoryError branch
     with pytest.raises(DefinePrettyPrintError):
         pp.pretty_print_to_file(tmp_path)
+
+
+def test_console_broken_pipe_exits_cleanly():
+    # a reader (e.g. `more`/`head`) that quits after one line closes the pipe early;
+    # the CLI should exit 0 with no traceback. define.xml is larger than the OS pipe
+    # buffer, so the writer is still writing when the read end closes.
+    p = _run_pp_console()
+    try:
+        p.stdout.readline()          # read one line, like a pager's first screen
+        p.stdout.close()             # reader goes away -> next write hits a broken pipe
+        err = p.stderr.read()
+        rc = p.wait(timeout=15)
+    finally:
+        if p.poll() is None:
+            p.kill()
+        p.stderr.close()
+
+    assert rc == 0
+    assert b"Traceback" not in err
+    assert b"BrokenPipeError" not in err
+
+
+def test_console_ctrl_c_exits_cleanly():
+    # Ctrl-C while paging sends SIGINT to the writer, which raises KeyboardInterrupt
+    # mid-write; the CLI should exit 130 quietly with no traceback. The read end stays
+    # open so the interrupt (not a broken pipe) is what ends the process.
+    p = _run_pp_console()
+    try:
+        p.stdout.readline()          # read one line so the writer blocks on a full pipe
+        time.sleep(0.3)
+        p.send_signal(signal.SIGINT)  # Ctrl-C
+        rc = p.wait(timeout=15)
+        err = p.stderr.read()
+    finally:
+        if p.poll() is None:
+            p.kill()
+        p.stdout.close()
+        p.stderr.close()
+
+    assert rc == 130
+    assert b"Traceback" not in err
+    assert b"KeyboardInterrupt" not in err
+    assert b"BrokenPipeError" not in err

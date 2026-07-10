@@ -1,4 +1,3 @@
-import os
 import sys
 from lxml import etree
 from pathlib import Path
@@ -49,15 +48,11 @@ class DefinePrettyPrinter:
         out = "\n".join(lines)
         if out:
             out += "\n"
-        try:
-            sys.stdout.write(out)
-            sys.stdout.flush()
-        except BrokenPipeError:
-            # the reader (e.g. more/less/head) closed the pipe early; suppress the traceback
-            # by redirecting the remaining stdout to devnull, then exit cleanly
-            devnull = os.open(os.devnull, os.O_WRONLY)
-            os.dup2(devnull, sys.stdout.fileno())
-            sys.exit(0)
+        # BrokenPipeError (pager quits early) and KeyboardInterrupt (Ctrl-C) are handled
+        # gracefully by the CLI entry point (see defineutils/definepp/__main__.py); the
+        # library method just writes so programmatic callers get normal exception semantics.
+        sys.stdout.write(out)
+        sys.stdout.flush()
 
     def _pretty_print_bytes(self) -> bytes:
         """
