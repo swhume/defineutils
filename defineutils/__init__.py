@@ -1,5 +1,5 @@
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
-from defineutils import definehtml, validate, definepp
+from defineutils import definehtml, validate, definepp, definerefs
 
-__all__ = ["definehtml", "validate", "definepp", "__version__"]
+__all__ = ["definehtml", "validate", "definepp", "definerefs", "__version__"]
