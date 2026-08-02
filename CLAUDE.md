@@ -46,9 +46,10 @@ pytest tests/test_definehtml.py::test_transform_to_html_string_basic
 # Transform define.xml to HTML
 python -m defineutils.definehtml -d tests/define.xml -o tests/define.html
 
-# Schema validate a define.xml (add -s to validate against a schema other than the bundled v2.1)
+# Schema validate a define.xml (add -s for a schema other than the bundled v2.1; -o, --json, -L as needed)
 python -m defineutils.validate -d tests/define.xml
 python -m defineutils.validate -d tests/define.xml -s cdisc-define-2.0/define2-0-0.xsd
+python -m defineutils.validate -d tests/define.xml --json -o report.json
 
 # Pretty-print a define.xml to a file (omit -o to print to the console; -H limits console lines)
 python -m defineutils.definepp -d tests/define.xml -o tests/define.pretty.xml
@@ -76,11 +77,34 @@ Each submodule follows the same pattern:
 Define-XML v2.1 schemas in `defineutils/validate/schema/`; the entry point is the module-level `DEFAULT_SCHEMA`
 (`schema/cdisc-define-2.1/define2-1-0.xsd`), used when the `xsd_file` argument (CLI `-s`/`--schema`) is not given. Any
 schema file path is accepted, so a define.xml can be validated against another Define-XML version. The resolved path is
-kept on `self.xsd_file`. Returns a success message or raises `DefineSchemaValidationError` with details. Failures that
-mean the check could not be run at all -- a schema that will not load (the `XMLSchema` object is built eagerly in
-`__init__`), or a define.xml that is missing or not well-formed -- raise `DefineSchemaLoadError`, a subclass of
-`DefineSchemaValidationError`, so it must be caught first where the two are distinguished. Sets exit codes: 0 valid,
-1 invalid, 2 could not validate; errors go to stderr.
+kept on `self.xsd_file`. Failures that mean the check could not be run at all -- a schema that will not load (the
+`XMLSchema` object is built eagerly in `__init__`), a define.xml that is missing or not well-formed, or a report that
+could not be written -- raise `DefineSchemaLoadError`, a subclass of `DefineSchemaValidationError`, so it must be
+caught first where the two are distinguished. Sets exit codes: 0 valid, 1 invalid, 2 could not validate; the report
+goes to stdout and failure messages to stderr.
+
+There are two validation paths, deliberately. `validate_define_file()` calls `xsd.validate()` on the file *path*, which
+raises on the **first** error; it is left that way as the quick check and its message wording is depended on by callers.
+`validate()` calls `xsd.iter_errors()` and collects **every** error, returning a `ValidationResult` cached on
+`self._result` that the `validate_to_string()` / `_to_file()` / `_to_console()` / `_to_json()` reports and the CLI exit
+code all reuse. There is no `errors_only` parameter anywhere -- schema validation yields only errors, never warnings.
+
+The collecting path parses with lxml (`etree.XMLParser(remove_comments=True)`) rather than handing xmlschema the path.
+Two reasons, both load-bearing: handing over a path leaves `error.sourceline` unset, so there would be no line numbers;
+and lxml keeps comments as child nodes, which shifts the child positions xmlschema reports in `at position N` messages,
+so they must be stripped for the reasons to match what the path source produces. Because lxml does the parsing, a
+missing file surfaces as `OSError` and a malformed one as `etree.XMLSyntaxError`; both are mapped onto
+`DefineSchemaLoadError` with the same wording the path-based route uses.
+
+Errors are grouped by `(check, element, reason)` into one `Finding` holding a `Location` (OID-decorated path plus line)
+per occurrence, sorted by descending occurrence count -- 401 raw errors against a mismatched schema become 110
+findings. The `check` id is derived **structurally**, never by matching on `reason` text, which xmlschema formats and is
+free to reword: `XMLSchemaChildrenValidationError` with `invalid_tag` set is `unexpected_child` and without it
+`incomplete_content`; `XMLSchemaDecodeError` (a subclass, so test it before the generic branches) is `invalid_value`;
+an `XsdAttributeGroup` validator is `attribute_error` (covering both a missing required attribute and a disallowed one);
+a validator whose class name contains `Facet` is `invalid_value`; anything else falls back to `schema_validation`.
+Rendering lives in `defineutils/validate/report.py`, which imports nothing from `validate.py` -- it duck-types the
+result -- keeping the dependency one-way, exactly as `definerefs/report.py` does.
 
 **definepp module**: Uses lxml to re-indent a define.xml. The `DefinePrettyPrinter` class parses with `remove_blank_text=True` and serializes with `pretty_print=True`, a byte-preserving reformat (comments, processing instructions, order and namespaces are retained). It outputs via `pretty_print_to_file()`, `pretty_print_to_string()`, or `pretty_print_to_console()` (with an optional line limit for paging), and raises `DefinePrettyPrintError`. This module bundles no resources.
 

@@ -12,9 +12,11 @@ The `definehtml.py` module includes the Define-XML v2.1 style sheet to simplify 
 or alternatively will generate an HTML string.
 
 The `validate.py` module includes the Define-XML v2.1 schema to simplify usage. It schema validates a define.xml file
-and returns a define.xml is valid message to indicate success, or a detailed message documenting the schema validation
-issues. The bundled schema is the default, but any schema file can be used instead -- the `-s` command-line parameter,
-or the `xsd_file` argument in code -- to validate against a different Define-XML version.
+and reports every schema validation error it finds, not just the first one. Errors that say the same thing about the
+same kind of element are grouped into one finding that lists each place it occurs, with a line number, so a file with
+hundreds of errors reads as a manageable list of distinct problems. The report can be printed to the console, written
+to a text file, or emitted as JSON. The bundled schema is the default, but any schema file can be used instead -- the
+`-s` command-line parameter, or the `xsd_file` argument in code -- to validate against a different Define-XML version.
 
 The `definepp.py` module pretty-prints a define.xml file. The reformat is byte-preserving apart from whitespace:
 comments, processing instructions, element/attribute order and namespaces are all retained. It writes the formatted
@@ -57,7 +59,33 @@ except DefineSchemaValidationError as e:
 ```
 
 The above code schema validates the specified define.xml file. The Define-XML v2.1 schema is embedded into the module.
-The schema validation errors are reported via the DefineSchemaValidationError exception.
+`validate_define_file()` is the quick check: it returns a message when the file is valid and otherwise raises
+DefineSchemaValidationError describing the **first** error found.
+
+To collect every error instead, use `validate()` and the report methods:
+```python
+from defineutils.validate import DefineSchemaValidator
+
+validator = DefineSchemaValidator("define.xml")
+result = validator.validate()
+print(f"{result.error_count} errors in {len(result.findings)} distinct problems")
+for finding in result.findings:
+    print(finding.check, finding.element, finding.reason)
+    for location in finding.locations:
+        print("   line", location.line, location.path)
+
+validator.validate_to_console()                       # the formatted listing
+validator.validate_to_file("report.txt")              # the same listing, saved
+validator.validate_to_file("report.json", as_json=True)
+report = validator.validate_to_json()                 # JSON string
+```
+
+`validate()` returns a ValidationResult carrying `error_count` (raw errors), `findings` (after grouping), and the
+`is_valid` / `has_errors` flags. Each Finding has a `check` id (`unexpected_child`, `incomplete_content`,
+`invalid_value`, `attribute_error` or `schema_validation`), the `element` it was found on, the `reason` as the schema
+validator phrased it, and a `locations` list of path/line pairs. The result is cached, so the report methods do not
+re-parse the file. The text listing shows the first 5 locations per finding by default; JSON always includes all of
+them.
 
 To validate against a different version of the schema, pass its file path as the `xsd_file` argument:
 ```python
@@ -122,7 +150,9 @@ python3 -m defineutils.definehtml -d tests/define.xml -o tests/define.html
 
 The validate command can be executed using the command-line the same way. For validate, only the -d parameter is 
 required to indicate the file path of the define.xml to validate. The -s parameter is optional and gives the file path
-of the schema to validate against; without it the bundled Define-XML v2.1 schema is used.
+of the schema to validate against; without it the bundled Define-XML v2.1 schema is used. Without -o the formatted
+listing goes to the console; with -o it is written to the given file. The --json switch emits machine-readable results
+instead of the listing, and -L sets how many example locations are shown per finding (0 shows all).
 
 ```commandline
 # validate against the bundled Define-XML v2.1 schema
@@ -130,11 +160,42 @@ python3 -m defineutils.validate -d tests/define.xml
 
 # validate against a different version of the schema
 python3 -m defineutils.validate -d tests/define.xml -s cdisc-define-2.0/define2-0-0.xsd
+
+# save the listing to a file
+python3 -m defineutils.validate -d tests/define.xml -o validation_report.txt
+
+# machine-readable results for CI or other tooling
+python3 -m defineutils.validate -d tests/define.xml --json
+
+# show every location of every error, rather than the first 5 per finding
+python3 -m defineutils.validate -d tests/define.xml -L 0
+```
+
+The listing names the file and the schema, then each distinct problem with the places it occurs:
+
+```
+Define-XML schema validation
+  File:   tests/define.xml
+  Schema: defineutils/validate/schema/cdisc-odm-1.3.2/ODM1-3-2.xsd
+  Scope:  401 errors in 110 distinct problems
+
+ERRORS (110)
+
+  unexpected_child  ItemDef   (108 occurrences)
+      Unexpected child with tag 'def:Origin' at position 2.
+      - line 782  MetaDataVersion[MDV.CDISC01_1]/ItemDef[IT.DM.AGE]
+      - line 789  MetaDataVersion[MDV.CDISC01_1]/ItemDef[IT.DM.AGEU]
+      ... and 106 more
+
+SUMMARY
+  401 errors in tests/define.xml
+  Schema: defineutils/validate/schema/cdisc-odm-1.3.2/ODM1-3-2.xsd
 ```
 
 validate sets an exit code so it can gate a CI job: 0 when the define.xml is valid, 1 when it is invalid, and 2 when
-the validation could not be run at all -- the schema would not load, or the define.xml could not be read or parsed.
-Errors are written to stderr and the file is valid message to stdout.
+the validation could not be run at all -- the schema would not load, the define.xml could not be read or parsed, or the
+report could not be written. The report is written to stdout and the failure messages to stderr, so a redirected report
+stays clean.
 
 The definepp command pretty-prints a define.xml. Use the -d parameter to specify the define.xml file path and the -o
 parameter to specify the formatted output file path. If no -o is given, the formatted define.xml is written to the
