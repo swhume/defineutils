@@ -28,7 +28,7 @@ Homepage = "https://github.com/swhume/defineutils"
 
 [tool.setuptools]
 packages = ["defineutils", "defineutils.definehtml", "defineutils.validate", "defineutils.definepp",
-            "defineutils.definerefs"]
+            "defineutils.definerefs", "defineutils.metrics"]
 
 [tool.setuptools.package-data]
 # Include non-Python files needed at runtime (schemas, XSL)

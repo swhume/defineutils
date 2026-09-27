@@ -2,11 +2,12 @@
 
 ## CDISC Define-XML v2.1 utilities
 
-The defineutils package currently includes 4 modules:
+The defineutils package currently includes 5 modules:
 1. `definehtml.py`: transforms a define.xml into a define.html using the stylesheet
 2. `validate.py`: schema validates a define.xml file
 3. `definepp.py`: pretty-prints (re-indents) a define.xml file
 4. `definerefs.py`: checks the OID reference/definition integrity of a define.xml file
+5. `metrics.py`: reports metrics for a define.xml file
 
 The `definehtml.py` module includes the Define-XML v2.1 style sheet to simplify usage. It generates a define.html file,
 or alternatively will generate an HTML string.
@@ -28,10 +29,16 @@ element, duplicate OIDs, and definitions nothing references. It also checks the 
 (`def:leaf`) and the `def:ArchiveLocationID` / `leafID` references to them. Errors and warnings are listed together
 with the location of each occurrence; the report can be written to the console, to a file, or as JSON.
 
+The `metrics.py` module reports what is in a define.xml: its size and creation date, the study and metadata version it
+describes, the CDISC standards it references, a count of every element, and a per-dataset table with the number of
+variables in each. The element list is derived from the Define-XML v2.1 model rather than hand-maintained, so an
+element the file does not use is reported as 0 instead of being left out -- a define.xml with no `MethodDef` at all
+says so. The report can be printed to the console, written to a text file, or emitted as JSON.
+
 ## Using defineutils
 
-Currently, defineutils contains 4 modules: one for generating an HTML rendition, one for schema validation, one
-for pretty-printing, and one for OID reference/definition checking.
+Currently, defineutils contains 5 modules: one for generating an HTML rendition, one for schema validation, one
+for pretty-printing, one for OID reference/definition checking, and one for reporting metrics.
 
 Example code used to generate a define.html from a define.xml:
 ```python
@@ -137,6 +144,38 @@ into the Define-XML v2.1 model cannot be checked at all, so that failure is repo
 exception with a recommendation to run the validate module first. Pass `permissive=True` to attempt a best-effort
 check of a non-conformant file anyway.
 
+Example code used to report the metrics for a define.xml:
+```python
+from pathlib import Path
+from defineutils.metrics import DefineMetrics, DefineMetricsError
+
+metrics = DefineMetrics(Path(__file__).parent.joinpath("define.xml"))
+try:
+    result = metrics.collect()
+    print(f"{result.total_elements} elements, {len(result.datasets)} datasets")
+    print(f"{result.count('ItemDef')} item definitions, {result.count('MethodDef')} methods")
+    metrics.collect_to_console()
+except DefineMetricsError as e:
+    print(e)
+```
+
+The above code loads the define.xml with odmlib and collects its metrics. `collect()` returns a MetricsResult carrying
+the file size and modified time, the `creation_datetime` the document declares, the study and metadata version
+identifiers, the `standards` it references, an `elements` list holding a count for every element type the Define-XML
+v2.1 model defines, and a `datasets` list holding one entry per ItemGroupDef with its variable count. The
+`total_elements`, `element_types`, `element_types_present`, `element_types_absent` and `total_variable_refs`
+properties give the totals, and `count("ItemDef")` looks up a single element count by name. The result is cached, so
+the report methods do not re-parse the file. Use `collect_to_string()` for the formatted report,
+`collect_to_file()` to write it to a file, `collect_to_console()` to print it, and `collect_to_json()` for
+machine-readable results; pass `show_datasets=False` to leave the per-dataset table out of the text report. A
+define.xml that will not load into the Define-XML v2.1 model is reported via the DefineMetricsError exception with a
+recommendation to run the validate module first; pass `permissive=True` to collect best-effort metrics from a
+non-conformant file anyway.
+
+Note that the element counts are per element type across the whole document, so the ItemRef count includes both the
+dataset variables and the value-level ItemRefs under each def:ValueListDef. The `Variables` column in the dataset
+table, and the `total_variable_refs` property, count only the ItemRefs belonging to an ItemGroupDef.
+
 ## Running defineutils from the Command-line
 
 When you run a module with the -m switch it will execute the defineutils modules from the command-line. For example,
@@ -241,6 +280,80 @@ define.xml, or one that only has orphan definition warnings), 1 when there are e
 duplicate OIDs or type mismatches), and 2 when the check could not be run at all -- the define.xml would not load,
 or the report could not be written. A file that will not load is reported with a recommendation to run the validate
 module to find out why.
+
+The metrics command reports what is in a define.xml. Use the -d parameter to specify the define.xml file path.
+Without -o the report goes to the console; with -o it is written to the given file. The --json switch emits
+machine-readable results instead of the report, --no-datasets leaves the per-dataset table out, and --permissive
+collects best-effort metrics from a define.xml that is not conformant enough to load normally.
+
+```commandline
+# print the report to the console
+python3 -m defineutils.metrics -d tests/define.xml
+
+# save the report to a file
+python3 -m defineutils.metrics -d tests/define.xml -o metrics_report.txt
+
+# machine-readable results for CI or other tooling
+python3 -m defineutils.metrics -d tests/define.xml --json
+
+# the counts and totals without the per-dataset table
+python3 -m defineutils.metrics -d tests/define.xml --no-datasets
+
+# best-effort metrics for a non-conformant define.xml
+python3 -m defineutils.metrics -d broken_define.xml --permissive
+```
+
+The report names the file and the study, then the element counts and the datasets:
+
+```
+Define-XML metrics
+  File:     tests/define.xml
+  Size:     174,322 bytes (170.2 KiB)
+  Created:  2024-11-21T16:27:00  (ODM/@CreationDateTime)
+  Modified: 2025-03-28T14:05:08  (file system)
+  Model:    Define-XML v2.1 (odmlib define_2_1, odmlib 0.2.0)
+
+STUDY
+  Study name:        CDISC01_1
+  Protocol name:     CDISC01-1
+  Description:       CDISC Test Study Modified to illustrate Define-XML 2.1 features
+  Study OID:         STDY.www.cdisc.org.CDISC01_1
+  MetaDataVersion:   MDV.CDISC01_1.1.SDTMIG.3.1.2.SDTM.1.2_X
+                     Study CDISC01_1, Data Definitions V-1
+  Define version:    2.1.9
+  Standards (6):     SDTMIG 3.1.2 IG (Final), SDTMIG 3.2 IG (Final), SDTMIG-MD 1.0 IG (Final),
+                     CDISC/NCI SDTM 2011-12-09 CT (Final), CDISC/NCI SDTM 2015-12-18 CT (Final),
+                     CDISC/NCI DEFINE-XML 2025-03-28 CT (Final)
+
+ELEMENT COUNTS
+  MetaDataVersion definitions
+    def:Standards          1
+    def:AnnotatedCRF       0
+    def:ValueListDef       8
+    ItemGroupDef          11
+    ItemDef              179
+    CodeList              40
+    MethodDef             33
+    def:leaf              12
+
+DATASETS (11)
+  OID        Name    Class            Repeating  No data  Variables
+  IG.TS      TS      TRIAL DESIGN     No         -                6
+  IG.DM      DM      SPECIAL PURPOSE  No         -               16
+  IG.XX      XX      FINDINGS         Yes        Yes             17
+                                                 Total          155
+
+SUMMARY
+  2,090 elements across 39 element types (37 present, 2 absent)
+  11 datasets, 155 variable references, 179 item definitions, 40 code lists, 33 methods
+```
+
+`def:AnnotatedCRF 0` above is the point of the model-derived element list: this define.xml has no annotated CRF, and
+the report says so rather than staying silent about it.
+
+metrics sets an exit code: 0 when the report was produced, and 2 when it could not be -- the define.xml is missing or
+would not load, or the report could not be written. Unlike validate and definerefs it never exits 1, because a
+metrics report describes a define.xml rather than judging it.
 
 If you are running defineutils from the source code using a virtual environment, you may need to activate that virtual
 environment before running the code from the command-line.

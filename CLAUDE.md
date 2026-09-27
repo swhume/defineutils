@@ -18,11 +18,12 @@ record only what a future session needs to know to avoid getting it wrong.
 
 ## Project Overview
 
-defineutils is a Python package for working with CDISC Define-XML v2.1 files. It provides four modules:
+defineutils is a Python package for working with CDISC Define-XML v2.1 files. It provides five modules:
 - **definehtml**: Transforms define.xml files to HTML using an embedded XSL stylesheet
 - **validate**: Schema validates define.xml files using embedded XSD schemas
 - **definepp**: Pretty-prints (re-indents) define.xml files
 - **definerefs**: Checks OID reference/definition integrity in define.xml files
+- **metrics**: Reports element counts and file/study metrics for define.xml files
 
 ## Commands
 
@@ -56,15 +57,19 @@ python -m defineutils.definepp -d tests/define.xml -o tests/define.pretty.xml
 
 # Check OID references/definitions (add --json, --errors-only, -L, --permissive as needed)
 python -m defineutils.definerefs -d tests/define.xml
+
+# Report define.xml metrics (add -o, --json, --no-datasets, --permissive as needed)
+python -m defineutils.metrics -d tests/define.xml
 ```
 
 ## Architecture
 
-The package is structured as `defineutils` with four submodules:
+The package is structured as `defineutils` with five submodules:
 - `defineutils/definehtml/` - HTML generation from Define-XML
 - `defineutils/validate/` - Schema validation
 - `defineutils/definepp/` - Pretty-printing
 - `defineutils/definerefs/` - OID reference/definition checking
+- `defineutils/metrics/` - Element counts and file/study metrics
 
 Each submodule follows the same pattern:
 - Main class in `<submodule>.py` with a custom exception class
@@ -120,5 +125,35 @@ duplicate test. Reports come from `check_to_string()`, `check_to_file()`, `check
 errors are dangling references, duplicate OIDs and type mismatches, while orphan definitions are warnings. Raises
 `DefineRefCheckError`, whose load-failure message recommends the validate module. This module bundles no resources
 and sets exit codes (0 clean, 1 errors, 2 could not check).
+
+**metrics module**: Uses odmlib to load the define.xml into the `define_2_1` model and report file/study identity,
+a count for every element type, and a per-dataset table. `DefineMetrics.collect()` returns a `MetricsResult` cached on
+`self._result`; `collect_to_string()` / `_to_file()` / `_to_console()` / `_to_json()` all reuse it. Raises
+`DefineMetricsError`, reusing definerefs' load-failure wording (recommends the validate module, and suggests
+`--permissive` only when a permissive load of that file actually succeeds). Bundles no resources.
+
+The counted element list is **derived from the model, never hand-coded**: `_element_inventory()` walks the closure of
+child elements reachable from `<model>.ODM` breadth-first over each class's `_elems`, so an element absent from a
+document is reported as `0` rather than omitted -- the whole point of the report. Two invariants make that walk
+correct and must not be "simplified":
+
+- Child classes are resolved **by name against the model module** (`getattr(model, name, descriptor.element_class)`),
+  mirroring `odmlib/define_loader.py` (`elem_class = getattr(self.DEF, elem_name)`). `define_2_1.MetaDataVersion`
+  inherits its `ItemGroupDef` / `ItemDef` / `CodeList` / `MethodDef` descriptors from `odm_1_3_2.MetaDataVersion`, so
+  following `descriptor.element_class` walks the **ODM 1.3.2** shape: `ItemDef` gains `Question`, `ExternalQuestion`,
+  `MeasurementUnitRef` and `ErrorMessage` and loses `def:Origin` / `def:ValueListRef`, and `ItemGroupDef` loses
+  `def:Class` / `def:leaf`. Nothing raises when this goes wrong; `tests/test_metrics.py` pins the inventory to the
+  model's own class set (39 element types for `define_2_1`).
+- The walk is breadth-first because a section is assigned from where an element is *first* reached: `MetaDataVersion`'s
+  own children are the `definitions` section, everything deeper is `nested`. `def:leaf` is reachable both ways, and BFS
+  puts it with the definitions.
+
+Counting is a separate `element.__dict__` traversal (the definerefs technique, for the same reason), and every
+attribute read happens inside the same permissive context as the load, since reading an unset required attribute
+outside it raises. Element counts are per element type across the whole document, so `ItemRef` (199 in
+`tests/define.xml`) covers both dataset variables and the value-level ItemRefs under `def:ValueListDef`; the dataset
+table's `Variables` column and `total_variable_refs` count only `len(ItemGroupDef.ItemRef)` (155) -- the two numbers
+differ by design. Exit codes are **0 and 2 only** (0 report produced, 2 could not be produced); 1 is deliberately
+reserved, because a metrics report describes a file rather than judging it.
 
 The definehtml and validate modules bundle their required resources (XSL stylesheet, XSD schemas) to simplify usage.
