@@ -1,6 +1,4 @@
 import os
-import signal
-import sys
 from pathlib import Path
 import argparse
 from defineutils.definepp import DefinePrettyPrinter, DefinePrettyPrintError
@@ -21,43 +19,18 @@ def main():
         # output-file error is not a broken pipe, so let it surface normally.
         if args.out and not isinstance(e, BrokenPipeError):
             raise
-        _abort_broken_pipe()
+        _quiet_exit(0)
     except KeyboardInterrupt:
         # the user pressed Ctrl-C (e.g. to quit the pager)
-        _abort_interrupt()
+        _quiet_exit(130)
 
-def _abort_broken_pipe():
-    """Exit quietly after a reader closed the pipe."""
-    _quiet_stdout()
-    # os._exit skips interpreter shutdown, so no stray flush of the closed pipe can leak
-    # an 'Exception ignored ... BrokenPipeError' at exit.
-    os._exit(0)
-
-def _abort_interrupt():
-    """Exit after Ctrl-C. On POSIX, reset SIGINT to its default handler and re-raise it so
-    the process dies *by* the signal: this tells the parent shell the pipeline was
-    interrupted, so it restores the prompt immediately instead of waiting for a keystroke."""
-    _quiet_stdout()
-    if os.name == "posix":
-        signal.signal(signal.SIGINT, signal.SIG_DFL)
-        os.kill(os.getpid(), signal.SIGINT)
-    # os._exit bypasses interpreter shutdown entirely, so no late flush or re-raised
-    # interrupt during finalization can print a traceback (this is what leaked a
-    # KeyboardInterrupt at exit on Windows). 130 == 128 + SIGINT.
-    os._exit(130)
-
-def _quiet_stdout():
-    """Redirect stdout to os.devnull *and drain its buffer there*, so an in-flight write to
-    the closed pipe does not keep raising. Best effort: a no-op if stdout has no real fd."""
-    try:
-        devnull = os.open(os.devnull, os.O_WRONLY)
-        os.dup2(devnull, sys.stdout.fileno())
-    except OSError:
-        return
-    try:
-        sys.stdout.flush()
-    except OSError:
-        pass
+def _quiet_exit(code):
+    """Terminate immediately via os._exit, bypassing interpreter shutdown. Because Python
+    never gets to flush its std streams, no stray write to the closed pipe -- nor a late
+    Ctrl-C during finalization -- can print an 'Exception ignored ...' message or traceback
+    at exit (the failure seen on Windows). 130 == 128 + SIGINT, the conventional Ctrl-C
+    status; a broken pipe exits 0 since quitting the pager is not an error."""
+    os._exit(code)
 
 def set_cmd_line_args():
     """
@@ -80,6 +53,6 @@ if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        _abort_interrupt()
+        _quiet_exit(130)
     except BrokenPipeError:
-        _abort_broken_pipe()
+        _quiet_exit(0)
