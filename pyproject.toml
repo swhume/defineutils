@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "defineutils"
-version = "0.3.0"
+version = "0.4.0"
 description = "CDISC Define-XML v2.1 utilities"
 readme = "README.md"
 authors = [{ name = "Sam Hume", email = "swhume@gmail.com" }]

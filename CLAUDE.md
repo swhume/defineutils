@@ -44,7 +44,8 @@ pytest tests/test_definehtml.py::test_transform_to_html_string_basic
 
 ### Run modules from command line
 ```bash
-# Transform define.xml to HTML
+# Transform define.xml to HTML (omit -o to write <define name>.html beside the input; add --comments-table,
+# --no-methods-table, --prefixes, --length-format, --codelist-items N as needed)
 python -m defineutils.definehtml -d tests/define.xml -o tests/define.html
 
 # Schema validate a define.xml (add -s for a schema other than the bundled v2.1; -o, --json, -L as needed)
@@ -76,7 +77,51 @@ Each submodule follows the same pattern:
 - `__init__.py` exports the main class and exception
 - `__main__.py` enables CLI usage via `python -m defineutils.<submodule>`
 
-**definehtml module**: Uses lxml for XSLT transformation. The `DefineHtml` class takes a define.xml path, applies the bundled `define2-1.xsl` stylesheet, and outputs HTML via `transform_to_html_string()` or `transform_to_html_file()`.
+**definehtml module**: Uses lxml for XSLT transformation. `DefineHtml` compiles the bundled `define2-1.xsl` (the
+module-level `STYLESHEET`) once in `__init__` and renders via `transform_to_html_string()`, which returns `str`, or
+`transform_to_html_file()`; the result tree is cached on `self._result`. Serialize an XSLT result only with
+`str(result)` / `bytes(result)`, **never `etree.tostring()`**. `tostring()` writes XML and ignores the stylesheet's
+`xsl:output method="html"`, self-closing empty `<span/>` / `<a/>` / `<ul/>`, which browsers read as unclosed start tags
+that swallow the rest of the page. That was the real cause of the a0022b8 "text shown as hyperlinks" workaround in the
+stylesheet.
+
+Every failure raises `DefineHtmlGenerationError`; nothing returns an empty result or writes nothing silently.
+- XSLT errors carry the distinct `error_log` messages, because `str(XSLTApplyError)` can be one word (`'first'`).
+- Input must have an ODM v1.3 root and a MetaDataVersion with the v2.1 `def:DefineVersion`. The stylesheet binds `def:`
+  to the v2.1 namespace, so other input would otherwise render without error but with most of its content missing.
+- `transform_to_html_file()` checks the destination before transforming, and refuses one that is the input
+  (`samefile`).
+
+Before serializing, `_neutralize_unsafe_links()` turns each `<a href>` into a `<span>` unless its scheme is relative,
+`http`, `https`, `file` or a one-letter Windows drive, since hrefs are copied verbatim from `def:leaf/@xlink:href` and
+`ExternalCodeList/@href`.
+
+The stylesheet's five `xsl:param`s are constructor options:
+
+| Option | Default | CLI flag |
+|---|---|---|
+| `codelist_items` | 5 | `--codelist-items N` |
+| `methods_table` | True | `--no-methods-table` |
+| `comments_table` | False | `--comments-table` |
+| `prefixes` | False | `--prefixes` |
+| `length_format` | False | `--length-format` |
+
+lxml evaluates parameter values as XPath expressions, so only validated integers are passed.
+
+CLI: `-d` is required and `-o` defaults to `<define stem>.html` beside the input. Exit codes: 0 HTML written; 2 not
+written (`DefineHtmlGenerationError`); 1 an unexpected exception, with the traceback on stderr; 130 Ctrl-C.
+
+`define2-1.xsl` is a modified copy of Lex Jansen's stylesheet: **log every stylesheet edit in
+`stylesheet_changes.md`**.
+- Its OID lookups use `xsl:key`s whose match patterns are anchored at `/odm:ODM/odm:Study[1]/odm:MetaDataVersion[1]`,
+  the same node set as the `$g_seq…` globals they replaced. Use `key()` for new lookups and keep that anchoring;
+  filtering a `$g_seq…` sequence by OID makes rendering quadratic again.
+- `key()` searches the context node's document, so it must not be called with the context inside the `str:tokenize`
+  loops of `linkPages2Hyperlinks` / `linkNamedDestinations2Hyperlinks`.
+
+Rendering tests:
+- The `edited_define` fixture in `tests/conftest.py` builds synthetic define.xml files from an lxml edit of a test file.
+- `tests/define-adam.xml`, the CDISC ADaM sample, is the only test file with ARM content.
 
 **validate module**: Uses xmlschema for validation. The `DefineSchemaValidator` class validates against the bundled
 Define-XML v2.1 schemas in `defineutils/validate/schema/`; the entry point is the module-level `DEFAULT_SCHEMA`
@@ -153,7 +198,9 @@ attribute read happens inside the same permissive context as the load, since rea
 outside it raises. Element counts are per element type across the whole document, so `ItemRef` (199 in
 `tests/define.xml`) covers both dataset variables and the value-level ItemRefs under `def:ValueListDef`; the dataset
 table's `Variables` column and `total_variable_refs` count only `len(ItemGroupDef.ItemRef)` (155) -- the two numbers
-differ by design. Exit codes are **0 and 2 only** (0 report produced, 2 could not be produced); 1 is deliberately
-reserved, because a metrics report describes a file rather than judging it.
+differ by design. Exit codes are 0 (report produced), 2 (could not be produced) and 1 (an unexpected exception, with
+the traceback on stderr). 1 never judges the file, because a metrics report describes a file rather than judging it.
+`main()` re-raises `BrokenPipeError` ahead of its `except Exception`, so quitting a pager still exits 0 at the entry
+point.
 
 The definehtml and validate modules bundle their required resources (XSL stylesheet, XSD schemas) to simplify usage.

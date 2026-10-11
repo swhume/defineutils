@@ -1,14 +1,16 @@
 import os
 import sys
+import traceback
 from pathlib import Path
 import argparse
 from defineutils.metrics import DefineMetrics, DefineMetricsError
 
 def main():
     """
-    collects the define.xml metrics and returns the exit code: 0 when the report was produced
-    and 2 when it could not be -- the file is missing, the define.xml would not load, or the
-    report could not be written. 1 is deliberately unused: a metrics report describes a file
+    collects the define.xml metrics and returns the exit code: 0 when the report was produced;
+    2 when it could not be -- the file is missing, the define.xml would not load, or the report
+    could not be written; and 1 when an unexpected error occurred, with its traceback on stderr
+    so it can be reported. 1 is never a judgement on the file: a metrics report describes a file
     rather than judging it, so unlike validate and definerefs it has no failed outcome
     :return: int exit code
     """
@@ -28,6 +30,12 @@ def main():
         # of a redirected report
         print(e, file=sys.stderr)
         return 2
+    except BrokenPipeError:
+        # quitting a pager is not a crash; the entry point exits 0 for it
+        raise
+    except Exception:
+        traceback.print_exc()
+        return 1
 
 def _quiet_exit(code):
     """Terminate immediately via os._exit, bypassing interpreter shutdown, so a late write to

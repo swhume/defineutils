@@ -20,11 +20,16 @@
   OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 -->
+<!--
+  This is a modified copy of the define2-1.xsl stylesheet above (stylesheet date 2019-02-11), bundled
+  with defineutils. Every change from the original is recorded in stylesheet_changes.md in the
+  defineutils repository.
+-->
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
   xmlns:odm="http://www.cdisc.org/ns/odm/v1.3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xmlns:def="http://www.cdisc.org/ns/def/v2.1" xmlns:xlink="http://www.w3.org/1999/xlink" 
-  xmlns:arm="http://www.cdisc.org/ns/arm/v1.0" xml:lang="en"
-  exclude-result-prefixes="def xlink odm xsi arm">
+  xmlns:arm="http://www.cdisc.org/ns/arm/v1.0" xmlns:str="http://exslt.org/strings" xml:lang="en"
+  exclude-result-prefixes="def xlink odm xsi arm str">
   <xsl:output method="html" indent="no" encoding="utf-8" 
     doctype-system="http://www.w3.org/TR/html4/strict.dtd"
     doctype-public="-//W3C//DTD HTML 4.01//EN" version="4.0"/>
@@ -230,6 +235,22 @@
   <xsl:variable name="g_seqCommentDefs" select="$g_MetaDataVersion/def:CommentDef"/>
   <xsl:variable name="g_seqWhereClauseDefs" select="$g_MetaDataVersion/def:WhereClauseDef"/>
   <xsl:variable name="g_seqleafs" select="$g_MetaDataVersion/def:leaf"/>
+
+  <!-- OID lookups. Each key indexes exactly the node set of the global sequence it replaces (the first
+       Study's first MetaDataVersion), so key('kItemDef', $oid) selects what the filter
+       $g_seqItemDefs[@OID=$oid] did, without scanning every definition on every lookup, which made
+       rendering quadratic -->
+  <xsl:key name="kItemDef" match="/odm:ODM/odm:Study[1]/odm:MetaDataVersion[1]/odm:ItemDef" use="@OID"/>
+  <xsl:key name="kItemDefByName" match="/odm:ODM/odm:Study[1]/odm:MetaDataVersion[1]/odm:ItemDef" use="@Name"/>
+  <xsl:key name="kItemGroupDef" match="/odm:ODM/odm:Study[1]/odm:MetaDataVersion[1]/odm:ItemGroupDef" use="@OID"/>
+  <xsl:key name="kItemGroupDefByName" match="/odm:ODM/odm:Study[1]/odm:MetaDataVersion[1]/odm:ItemGroupDef" use="@Name"/>
+  <xsl:key name="kItemGroupItemRef" match="/odm:ODM/odm:Study[1]/odm:MetaDataVersion[1]/odm:ItemGroupDef/odm:ItemRef" use="@ItemOID"/>
+  <xsl:key name="kCodeList" match="/odm:ODM/odm:Study[1]/odm:MetaDataVersion[1]/odm:CodeList" use="@OID"/>
+  <xsl:key name="kValueListDef" match="/odm:ODM/odm:Study[1]/odm:MetaDataVersion[1]/def:ValueListDef" use="@OID"/>
+  <xsl:key name="kWhereClauseDef" match="/odm:ODM/odm:Study[1]/odm:MetaDataVersion[1]/def:WhereClauseDef" use="@OID"/>
+  <xsl:key name="kMethodDef" match="/odm:ODM/odm:Study[1]/odm:MetaDataVersion[1]/odm:MethodDef" use="@OID"/>
+  <xsl:key name="kCommentDef" match="/odm:ODM/odm:Study[1]/odm:MetaDataVersion[1]/def:CommentDef" use="@OID"/>
+  <xsl:key name="kLeaf" match="/odm:ODM/odm:Study[1]/odm:MetaDataVersion[1]/def:leaf" use="@ID"/>
   
   <xsl:variable name="g_StandardName">
     <xsl:choose>
@@ -239,7 +260,7 @@
       </xsl:when>
       <xsl:otherwise >
         <!-- Define-XML v2.1 -->
-        <xsl:value-of select="$g_MetaDataVersion/def:Standards/def:Standard[1][@Type='IG']/@Name"/>
+        <xsl:value-of select="$g_MetaDataVersion/def:Standards/def:Standard[@Type='IG'][1]/@Name"/>
       </xsl:otherwise>
     </xsl:choose>
   </xsl:variable>
@@ -251,7 +272,7 @@
       </xsl:when>
       <xsl:otherwise >
         <!-- Define-XML v2.1 -->
-        <xsl:value-of select="$g_MetaDataVersion/def:Standards/def:Standard[1][@Type='IG']/@Version"/>        
+        <xsl:value-of select="$g_MetaDataVersion/def:Standards/def:Standard[@Type='IG'][1]/@Version"/>
       </xsl:otherwise>
     </xsl:choose>
   </xsl:variable>
@@ -411,7 +432,7 @@
       	<xsl:if test="/odm:ODM/odm:Study/odm:MetaDataVersion/arm:AnalysisResultDisplays">
       		<li class="hmenu-submenu" >
       			<span class="hmenu-bullet" onclick="toggle_submenu(this);">+</span>
-      			<span class="tocItem">Analysis Results Metadata</span>
+      			<a class="tocItem" href="#ARM_Table_Summary">Analysis Results Metadata</a>
       			<ul> 
       				<xsl:for-each select="/odm:ODM/odm:Study/odm:MetaDataVersion/arm:AnalysisResultDisplays/arm:ResultDisplay">
       					<li class="hmenu-item">
@@ -455,7 +476,7 @@
               <xsl:if test="$g_seqCodeLists[odm:CodeListItem|odm:EnumeratedItem]">
                 <li class="hmenu-submenu">
                   <span class="hmenu-bullet" onclick="toggle_submenu(this);">+</span>
-                  <span class="tocItem">CodeLists</span>
+                  <a class="tocItem" href="#decodelist">CodeLists</a>
                   <ul>
                     <xsl:for-each select="$g_seqCodeLists[odm:CodeListItem|odm:EnumeratedItem]">
                       <li class="hmenu-item">
@@ -475,7 +496,7 @@
               <xsl:if test="$g_seqCodeLists[odm:ExternalCodeList]">
                 <li class="hmenu-submenu">
                   <span class="hmenu-bullet" onclick="toggle_submenu(this);">+</span>
-                  <span class="tocItem">External Dictionaries</span>
+                  <a class="tocItem" href="#externaldictionary">External Dictionaries</a>
                   <ul>
                     <xsl:for-each select="$g_seqCodeLists[odm:ExternalCodeList]">
                       <li class="hmenu-item">
@@ -501,7 +522,7 @@
           <xsl:if test="$g_seqMethodDefs">
             <li class="hmenu-submenu">
               <span class="hmenu-bullet" onclick="toggle_submenu(this);">+</span>
-              <span class="tocItem">Methods</span>
+              <a class="tocItem" href="#compmethod">Methods</a>
               <ul>
                 <xsl:for-each select="$g_seqMethodDefs">
                   <li class="hmenu-item">
@@ -523,7 +544,7 @@
           <xsl:if test="$g_seqCommentDefs">
             <li class="hmenu-submenu">
               <span class="hmenu-bullet" onclick="toggle_submenu(this);">+</span>
-              <span class="tocItem">Comments</span>
+              <a class="tocItem" href="#comment">Comments</a>
               <ul>
                 <xsl:for-each select="$g_seqCommentDefs">
                   <li class="hmenu-item">
@@ -876,7 +897,7 @@
                 <td>
                   
                   <xsl:if test="$ParameterOID">
-                    <xsl:if test="count($g_seqItemDefs[@OID=$ParameterOID]) = 0">
+                    <xsl:if test="count(key('kItemDef', $ParameterOID)) = 0">
                       <span class="unresolved"><xsl:text>[unresolved: </xsl:text><xsl:value-of select="$ParameterOID"/><xsl:text>]</xsl:text></span>
                     </xsl:if>
                   </xsl:if>  
@@ -884,20 +905,20 @@
                   <xsl:for-each select="$AnalysisResult/arm:AnalysisDatasets/arm:AnalysisDataset">
   
                     <xsl:variable name="WhereClauseOID" select="def:WhereClauseRef/@WhereClauseOID"/>
-                    <xsl:variable name="WhereClauseDef" select="$g_seqWhereClauseDefs[@OID=$WhereClauseOID]"/>
+                    <xsl:variable name="WhereClauseDef" select="key('kWhereClauseDef', $WhereClauseOID)"/>
                     <xsl:variable name="ItemGroupOID" select="@ItemGroupOID"/>
                     
                     <!--  Get the RangeCheck associated with the parameter (typically only one ...) --> 
                     <xsl:for-each select="$WhereClauseDef/odm:RangeCheck[@def:ItemOID=$ParameterOID]">
                       
                       <xsl:variable name="whereRefItemOID" select="./@def:ItemOID"/>
-                      <xsl:variable name="whereRefItemName" select="$g_seqItemDefs[@OID=$whereRefItemOID]/@Name"/>
-                      <xsl:variable name="whereRefItemDataType" select="$g_seqItemDefs[@OID=$whereRefItemOID]/@DataType"/>
+                      <xsl:variable name="whereRefItemName" select="key('kItemDef', $whereRefItemOID)/@Name"/>
+                      <xsl:variable name="whereRefItemDataType" select="key('kItemDef', $whereRefItemOID)/@DataType"/>
                       <xsl:variable name="whereOP" select="./@Comparator"/>
                       <xsl:variable name="whereRefItemCodeListOID"
-                        select="$g_seqItemDefs[@OID=$whereRefItemOID]/odm:CodeListRef/@CodeListOID"/>
+                        select="key('kItemDef', $whereRefItemOID)/odm:CodeListRef/@CodeListOID"/>
                       <xsl:variable name="whereRefItemCodeList"
-                        select="$g_seqCodeLists[@OID=$whereRefItemCodeListOID]"/>
+                        select="key('kCodeList', $whereRefItemCodeListOID)"/>
                       
                       <xsl:call-template name="ItemGroupItemLink">
                         <xsl:with-param name="ItemGroupOID" select="$ItemGroupOID"/>
@@ -923,7 +944,7 @@
                             <p class="linebreakcell"> 
                               <xsl:call-template name="displayValue">
                                 <xsl:with-param name="Value" select="$CheckValueINNOTIN"/>
-                                <xsl:with-param name="DataType" select="$g_seqItemDefs[@OID=$whereRefItemOID]/@DataType"/>
+                                <xsl:with-param name="DataType" select="key('kItemDef', $whereRefItemOID)/@DataType"/>
                                 <xsl:with-param name="decode" select="1"/>
                                 <xsl:with-param name="CodeList" select="$whereRefItemCodeList"/>
                               </xsl:call-template>
@@ -939,7 +960,7 @@
                           <xsl:text> = </xsl:text>
                           <xsl:call-template name="displayValue">
                             <xsl:with-param name="Value" select="$CheckValueEQ"/>
-                            <xsl:with-param name="DataType" select="$g_seqItemDefs[@OID=$whereRefItemOID]/@DataType"/>
+                            <xsl:with-param name="DataType" select="key('kItemDef', $whereRefItemOID)/@DataType"/>
                             <xsl:with-param name="decode" select="1"/>
                             <xsl:with-param name="CodeList" select="$whereRefItemCodeList"/>
                           </xsl:call-template>
@@ -950,7 +971,7 @@
                           <xsl:text> &#x2260; </xsl:text>
                           <xsl:call-template name="displayValue">
                             <xsl:with-param name="Value" select="$CheckValueNE"/>
-                            <xsl:with-param name="DataType" select="$g_seqItemDefs[@OID=$whereRefItemOID]/@DataType"/>
+                            <xsl:with-param name="DataType" select="key('kItemDef', $whereRefItemOID)/@DataType"/>
                             <xsl:with-param name="decode" select="1"/>
                             <xsl:with-param name="CodeList" select="$whereRefItemCodeList"/>
                           </xsl:call-template>
@@ -978,7 +999,7 @@
                           </xsl:choose>
                           <xsl:call-template name="displayValue">
                             <xsl:with-param name="Value" select="$CheckValueOTH"/>
-                            <xsl:with-param name="DataType" select="$g_seqItemDefs[@OID=$whereRefItemOID]/@DataType"/>
+                            <xsl:with-param name="DataType" select="key('kItemDef', $whereRefItemOID)/@DataType"/>
                             <xsl:with-param name="decode" select="1"/>
                             <xsl:with-param name="CodeList" select="$whereRefItemCodeList"/>
                           </xsl:call-template>                        
@@ -1079,9 +1100,10 @@
                       </xsl:choose>
                       
                       <xsl:text>  [</xsl:text>
+                      <!-- only this AnalysisDataset's where clauses; selecting every AnalysisDataset of the
+                           same ItemGroup repeated each one's selection criteria in all of them -->
                       <xsl:call-template name="displayWhereClause">
-                        <xsl:with-param name="ValueItemRef"
-                           select="$AnalysisResult/arm:AnalysisDatasets/arm:AnalysisDataset[@ItemGroupOID=$ItemGroupOID]"/>
+                        <xsl:with-param name="ValueItemRef" select="."/>
                         <xsl:with-param name="ItemGroupLink" select="$ItemGroupOID"/>
                         <xsl:with-param name="decode" select="0"/>
                         <xsl:with-param name="break" select="0"/>
@@ -1338,7 +1360,7 @@
         <xsl:call-template name="linkParentDomain"/>
         <xsl:call-template name="linkApParentDomain"/>
         
-        <xsl:variable name="nItemsWithVLM"><xsl:value-of select="count(./odm:ItemRef[@ItemOID=$g_seqItemDefsValueListRef/../@OID])"/></xsl:variable>
+        <xsl:variable name="nItemsWithVLM"><xsl:value-of select="count(./odm:ItemRef[key('kItemDef', @ItemOID)/def:ValueListRef])"/></xsl:variable>
         
         <xsl:variable name="isSuppQual">
           <xsl:choose>
@@ -1392,7 +1414,7 @@
           <xsl:variable name="ItemRef" select="."/>
           <xsl:variable name="ItemDefOID" select="@ItemOID"/>
           <xsl:variable name="ItemGroupDefOID" select="../@OID"/>
-          <xsl:variable name="ItemDef" select="../../odm:ItemDef[@OID=$ItemDefOID]"/>
+          <xsl:variable name="ItemDef" select="key('kItemDef', $ItemDefOID)"/>
 
           <xsl:variable name="VLMClass">
             <xsl:choose>
@@ -1417,11 +1439,11 @@
                   <xsl:value-of select="$ItemDef/@Name"/>
                   
                   <xsl:choose>
-                    <xsl:when test="$g_seqValueListDefs[@OID = $ItemDef/def:ValueListRef/@ValueListOID]">
+                    <xsl:when test="key('kValueListDef', $ItemDef/def:ValueListRef/@ValueListOID)">
                       <xsl:element name="span">
                         <xsl:attribute name="class"><xsl:text>valuelist-reference</xsl:text></xsl:attribute>
                         <xsl:attribute name="onclick"><xsl:value-of select="concat('toggle_vlm(this)', ';')"/></xsl:attribute>
-                        <span id="{../@OID}.{$ItemDef/@OID}">VLM</span>
+                        <a id="{../@OID}.{$ItemDef/@OID}">VLM</a>
                       </xsl:element>
                     </xsl:when>
                     <xsl:otherwise>
@@ -1531,6 +1553,8 @@
                 select="$ItemDef/def:ValueListRef/@ValueListOID"/>
               <xsl:with-param name="ParentItemDefOID"
                 select="concat($ItemGroupDefOID, '.', $ItemDefOID)"/>
+              <xsl:with-param name="ItemGroupOID"
+                select="$ItemGroupDefOID"/>
               <xsl:with-param name="addRoleColumn"
                 select="$addRoleColumn"/>
               <xsl:with-param name="isSuppQual"
@@ -1557,11 +1581,13 @@
     
     <xsl:param name="OID"/>
     <xsl:param name="ParentItemDefOID"/>
+    <!-- the dataset whose table is being rendered -->
+    <xsl:param name="ItemGroupOID"/>
     <xsl:param name="addRoleColumn"/>
     <xsl:param name="isSuppQual"/>
     <xsl:param name="VLMClass" />
     
-        <xsl:for-each select="$g_seqValueListDefs[@OID=$OID]">
+        <xsl:for-each select="key('kValueListDef', $OID)">
 
               <!-- Get the individual data points -->
               <xsl:for-each select="./odm:ItemRef">
@@ -1570,21 +1596,19 @@
 
                 <xsl:variable name="ItemRef" select="."/>
                 <xsl:variable name="valueDefOID" select="@ItemOID"/>
-                <xsl:variable name="valueDef" select="../../odm:ItemDef[@OID=$valueDefOID]"/>
+                <xsl:variable name="valueDef" select="key('kItemDef', $valueDefOID)"/>
                 
                 <xsl:variable name="vlOID" select="../@OID"/>
-                <xsl:variable name="parentDef" select="../../odm:ItemDef/def:ValueListRef[@ValueListOID=$vlOID]"/>
-                <xsl:variable name="parentOID" select="$parentDef/../@OID"/>
-                <xsl:variable name="ParentVName" select="$parentDef/../@Name"/>
                 
-                <xsl:variable name="ValueItemGroupOID"
-                  select="$g_seqItemGroupDefs/odm:ItemRef[@ItemOID=$parentOID]/../@OID"/>
+                <!-- the dataset being rendered: an ItemDef shared by several datasets would otherwise
+                     link every where clause to the first dataset that references it -->
+                <xsl:variable name="ValueItemGroupOID" select="$ItemGroupOID"/>
                 
                 <xsl:variable name="whereOID" select="./def:WhereClauseRef/@WhereClauseOID"/>
-                <xsl:variable name="whereDef" select="$g_seqWhereClauseDefs[@OID=$whereOID]"/>
+                <xsl:variable name="whereDef" select="key('kWhereClauseDef', $whereOID)"/>
                 <xsl:variable name="whereRefItemOID" select="$whereDef/odm:RangeCheck/@def:ItemOID"/>
                 <xsl:variable name="whereRefItem"
-                  select="$g_seqItemDefs[@OID=$whereRefItemOID]/@Name"/>
+                  select="key('kItemDef', $whereRefItemOID)/@Name"/>
                 <xsl:variable name="whereOP" select="$whereDef/odm:RangeCheck/@Comparator"/>
                 <xsl:variable name="whereVal" select="$whereDef/odm:RangeCheck/odm:CheckValue"/>
                 
@@ -1677,8 +1701,8 @@
                     <xsl:value-of select="$valueDef/@DataType"/>
                   </td>
                   
-                  <!-- Role (when defined) -->
-                  <xsl:if test="count($ItemRef/@Role) > 0 or $addRoleColumn='1'">
+                  <!-- Role, only when the dataset table has a Role column -->
+                  <xsl:if test="$addRoleColumn='1'">
                     <td class="role"><xsl:value-of select="$ItemRef/@Role"/></td>
                   </xsl:if>
                   
@@ -1745,6 +1769,8 @@
                       select="$valueDef/def:ValueListRef/@ValueListOID"/>
                     <xsl:with-param name="ParentItemDefOID"
                       select="$ParentItemDefOID"/>
+                    <xsl:with-param name="ItemGroupOID"
+                      select="$ItemGroupOID"/>
                     <xsl:with-param name="addRoleColumn"
                       select="$addRoleColumn"/>
                     <xsl:with-param name="isSuppQual"
@@ -1807,7 +1833,7 @@
         <xsl:value-of select="@Name"/>
         <xsl:if test="./odm:Alias/@Context = 'nci:ExtCodeID'">
           <xsl:text> [</xsl:text>
-          <span class="nci"><xsl:value-of select="./odm:Alias/@Name"/></span>
+          <span class="nci"><xsl:value-of select="./odm:Alias[@Context = 'nci:ExtCodeID']/@Name"/></span>
           <xsl:text>]</xsl:text>
         </xsl:if>
         
@@ -1861,7 +1887,7 @@
               <xsl:value-of select="@CodedValue"/>
               <xsl:if test="./odm:Alias/@Context = 'nci:ExtCodeID'">
                 <xsl:text> [</xsl:text>
-                <span class="nci"><xsl:value-of select="./odm:Alias/@Name"/></span>
+                <span class="nci"><xsl:value-of select="./odm:Alias[@Context = 'nci:ExtCodeID']/@Name"/></span>
                 <xsl:text>]</xsl:text> 
               </xsl:if>
               <xsl:if test="@def:ExtendedValue='Yes'">
@@ -1904,7 +1930,7 @@
         <xsl:value-of select="@Name"/>
         <xsl:if test="./odm:Alias/@Context = 'nci:ExtCodeID'">
           <xsl:text> [</xsl:text>
-          <span class="nci"><xsl:value-of select="./odm:Alias/@Name"/></span>
+          <span class="nci"><xsl:value-of select="./odm:Alias[@Context = 'nci:ExtCodeID']/@Name"/></span>
           <xsl:text>]</xsl:text>
         </xsl:if>
         
@@ -1956,7 +1982,7 @@
               <xsl:value-of select="@CodedValue"/>
               <xsl:if test="./odm:Alias/@Context = 'nci:ExtCodeID'">
                 <xsl:text> [</xsl:text>
-                <span class="nci"><xsl:value-of select="./odm:Alias/@Name"/></span>
+                <span class="nci"><xsl:value-of select="./odm:Alias[@Context = 'nci:ExtCodeID']/@Name"/></span>
                 <xsl:text>]</xsl:text> 
               </xsl:if>
               <xsl:if test="@def:ExtendedValue='Yes'">
@@ -2206,7 +2232,7 @@
     <xsl:param name="element" select="'p'"/>
     
     <xsl:variable name="leafID" select="@leafID"/>
-    <xsl:variable name="leaf" select="$g_seqleafs[@ID = $leafID]"/>
+    <xsl:variable name="leaf" select="key('kLeaf', $leafID)"/>
     <xsl:variable name="href" select="$leaf/@xlink:href"/>
     
     <xsl:choose>
@@ -2319,84 +2345,36 @@
     <xsl:param name="ShowTitle"/>
     <xsl:param name="Separator"/>
     
-    <xsl:variable name="OriginString" select="$pagenumbers"/>
-    <xsl:variable name="first">
-      <xsl:choose>
-        <xsl:when test="contains($OriginString,$Separator)">
-          <xsl:value-of select="substring-before($OriginString,$Separator)"/>
-        </xsl:when>
-        <xsl:otherwise>
-          <xsl:value-of select="$OriginString"/>
-        </xsl:otherwise>
-      </xsl:choose>
-    </xsl:variable>
-    <xsl:variable name="rest" select="substring-after($OriginString,$Separator)"/>
-    <xsl:variable name="stringlengthfirst" select="string-length($first)"/>
-    
     <xsl:if test="$ShowTitle != '0'">
       <xsl:value-of select="$title"/>
       <xsl:text> [</xsl:text>
     </xsl:if>  
     
-    <xsl:if test="string-length($first) > 0">
+    <!-- iterate rather than recurse once per page: each recursion level counts toward libxslt's
+         template depth limit (3000), so about 995 page references aborted the whole transform -->
+    <xsl:for-each select="str:tokenize($pagenumbers, $Separator)">
+      <xsl:if test="position() = last() and last() > 1">
+        <xsl:text> </xsl:text>
+        <xsl:value-of select="$Separator"/>
+        <xsl:text> </xsl:text>
+      </xsl:if>
       <xsl:choose>
-        <xsl:when test="number($first)">
+        <xsl:when test="number(.)">
           <!-- it is a number, create the hyperlink -->
           <xsl:call-template name="displayHyperlink">
             <xsl:with-param name="href" select="$href"/>
-            <xsl:with-param name="anchor" select="concat('#page=', $first)"/>
-            <xsl:with-param name="title" select="$first"/>
+            <xsl:with-param name="anchor" select="concat('#page=', .)"/>
+            <xsl:with-param name="title" select="string(.)"/>
           </xsl:call-template>
         </xsl:when>
         <xsl:otherwise>
           <!-- it is not a number -->
-          <xsl:value-of select="$first"/>
+          <xsl:value-of select="."/>
         </xsl:otherwise>
       </xsl:choose>
-    </xsl:if>
+    </xsl:for-each>
     
-    <!-- split up the second part in words (recursion) -->
-    <xsl:if test="string-length($rest) > 0">
-      
-      <xsl:choose>
-        <xsl:when test="contains($rest,$Separator)">
-          <xsl:call-template name="linkPages2Hyperlinks">
-            <xsl:with-param name="href" select="$href"/>
-            <xsl:with-param name="pagenumbers" select="$rest"/>
-            <xsl:with-param name="title" select="$title"/>
-            <xsl:with-param name="ShowTitle" select="0"/>
-            <xsl:with-param name="Separator" select="' '"/>
-          </xsl:call-template>
-        </xsl:when>
-        <xsl:otherwise>
-          <xsl:text> </xsl:text>
-          <xsl:value-of select="$Separator"/>
-          <xsl:text> </xsl:text>
-          
-          <xsl:choose>
-            <xsl:when test="number($rest)">
-              <!-- it is a number, create the hyperlink -->
-              <xsl:call-template name="displayHyperlink">
-                <xsl:with-param name="href" select="$href"/>
-                <xsl:with-param name="anchor" select="concat('#page=', $rest)"/>
-                <xsl:with-param name="title" select="$rest"/>
-              </xsl:call-template>
-              <xsl:text>]</xsl:text>
-            </xsl:when>
-            <xsl:otherwise>
-              <!-- it is not a number -->
-              <xsl:value-of select="$rest"/>
-              <xsl:text>]</xsl:text>
-            </xsl:otherwise>
-          </xsl:choose>
-          
-        </xsl:otherwise>
-      </xsl:choose>
-    </xsl:if>
-    
-    <xsl:if test="string-length($rest) = 0">
-      <xsl:text>]</xsl:text>
-    </xsl:if>
+    <xsl:text>]</xsl:text>
     
   </xsl:template>
 
@@ -2410,78 +2388,33 @@
     <xsl:param name="ShowTitle"/>
     <xsl:param name="Separator"/>
     
-    <xsl:variable name="OriginString" select="$destinations"/>
-    <xsl:variable name="first">
-      <xsl:choose>
-        <xsl:when test="contains($OriginString,$Separator)">
-          <xsl:value-of select="substring-before($OriginString,$Separator)"/>
-        </xsl:when>
-        <xsl:otherwise>
-          <xsl:value-of select="$OriginString"/>
-        </xsl:otherwise>
-      </xsl:choose>
-    </xsl:variable>
-    <xsl:variable name="rest" select="substring-after($OriginString,$Separator)"/>
-    <xsl:variable name="stringlengthfirst" select="string-length($first)"/>
-    
     <xsl:if test="$ShowTitle != '0'">
       <xsl:value-of select="$title"/>
       <xsl:text> [</xsl:text>
     </xsl:if>  
     
-    <xsl:if test="string-length($first) > 0">
+    <!-- iterate rather than recurse once per destination (see linkPages2Hyperlinks) -->
+    <xsl:for-each select="str:tokenize($destinations, $Separator)">
+      <xsl:if test="position() = last() and last() > 1">
+        <xsl:text> </xsl:text>
+        <xsl:value-of select="$Separator"/>
+        <xsl:text> </xsl:text>
+      </xsl:if>
       <xsl:call-template name="displayHyperlink">
         <xsl:with-param name="href" select="$href"/>
-        <xsl:with-param name="anchor" select="concat('#', $first)"/>
+        <xsl:with-param name="anchor" select="concat('#', .)"/>
         <xsl:with-param name="title">
           <xsl:call-template name="stringReplace">
             <!-- Replace occurrences of #20 with blanks -->
-            <xsl:with-param name="string" select="$first"/>
+            <xsl:with-param name="string" select="string(.)"/>
             <xsl:with-param name="from" select="'#20'"/>
             <xsl:with-param name="to" select="' '"/>
           </xsl:call-template>
         </xsl:with-param>
       </xsl:call-template>
-    </xsl:if>
+    </xsl:for-each>
     
-    <!-- split up the second part in words (recursion) -->
-    <xsl:if test="string-length($rest) > 0">
-      
-      <xsl:choose>
-        <xsl:when test="contains($rest,$Separator)">
-          <xsl:call-template name="linkNamedDestinations2Hyperlinks">
-            <xsl:with-param name="href" select="$href"/>
-            <xsl:with-param name="destinations" select="$rest"/>
-            <xsl:with-param name="title" select="$title"/>
-            <xsl:with-param name="ShowTitle" select="0"/>
-            <xsl:with-param name="Separator" select="' '"/>
-          </xsl:call-template>
-        </xsl:when>
-        <xsl:otherwise>
-          <xsl:text> </xsl:text>
-          <xsl:value-of select="$Separator"/>
-          <xsl:text> </xsl:text>
-          
-          <xsl:call-template name="displayHyperlink">
-            <xsl:with-param name="href" select="$href"/>
-            <xsl:with-param name="anchor" select="concat('#', $rest)"/>
-            <xsl:with-param name="title">
-              <!-- Replace occurrences of #20 with blanks -->
-              <xsl:call-template name="stringReplace">
-                <xsl:with-param name="string" select="$rest"/>
-                <xsl:with-param name="from" select="'#20'"/>
-                <xsl:with-param name="to" select="' '"/>
-              </xsl:call-template>
-            </xsl:with-param>
-          </xsl:call-template>
-          <xsl:text>]</xsl:text>
-        </xsl:otherwise>
-      </xsl:choose>
-    </xsl:if>
-    
-    <xsl:if test="string-length($rest) = 0">
-      <xsl:text>]</xsl:text>
-    </xsl:if>
+    <xsl:text>]</xsl:text>
     
   </xsl:template>
   
@@ -2506,6 +2439,8 @@
       </xsl:when>
       <xsl:otherwise>
         <xsl:value-of select="$title"/>
+        <!-- the only separator between the page numbers and named destinations of a document reference -->
+        <xsl:text> </xsl:text>
       </xsl:otherwise>
     </xsl:choose>
   </xsl:template>
@@ -2522,8 +2457,8 @@
     <xsl:if test="starts-with(@Name, 'SUPP')">
       <!-- create an extra row to the XX dataset when there is one -->
       <xsl:variable name="parentDatasetName" select="substring(@Name, 5)"/>
-      <xsl:if test="../odm:ItemGroupDef[@Name = $parentDatasetName]">
-        <xsl:variable name="datasetOID" select="../odm:ItemGroupDef[@Name = $parentDatasetName]/@OID"/>
+      <xsl:if test="key('kItemGroupDefByName', $parentDatasetName)">
+        <xsl:variable name="datasetOID" select="key('kItemGroupDefByName', $parentDatasetName)/@OID"/>
         <tr>
           <td colspan="8">
             <xsl:text>Related Parent Dataset: </xsl:text>
@@ -2532,7 +2467,7 @@
               <xsl:value-of select="$parentDatasetName"/>
             </a>
             <xsl:text> (</xsl:text>
-            <xsl:value-of select="//odm:ItemGroupDef[@OID = $datasetOID]/odm:Description/odm:TranslatedText"/>
+            <xsl:value-of select="key('kItemGroupDef', $datasetOID)/odm:Description/odm:TranslatedText"/>
             <xsl:text>)</xsl:text>
           </td>
         </tr>
@@ -2551,8 +2486,8 @@
     <xsl:if test="starts-with(@Name, 'SQAP')">
       <!-- create an extra row to the XX dataset when there is one -->
       <xsl:variable name="parentDatasetName" select="concat('AP', substring(@Name, 5))"/>
-      <xsl:if test="../odm:ItemGroupDef[@Name = $parentDatasetName]">
-        <xsl:variable name="datasetOID" select="../odm:ItemGroupDef[@Name = $parentDatasetName]/@OID"/>
+      <xsl:if test="key('kItemGroupDefByName', $parentDatasetName)">
+        <xsl:variable name="datasetOID" select="key('kItemGroupDefByName', $parentDatasetName)/@OID"/>
         <tr>
           <td colspan="8">
             <xsl:text>Related Parent Dataset: </xsl:text>
@@ -2561,7 +2496,7 @@
               <xsl:value-of select="$parentDatasetName"/>
             </a>
             <xsl:text> (</xsl:text>
-            <xsl:value-of select="//odm:ItemGroupDef[@OID = $datasetOID]/odm:Description/odm:TranslatedText"/>
+            <xsl:value-of select="key('kItemGroupDef', $datasetOID)/odm:Description/odm:TranslatedText"/>
             <xsl:text>)</xsl:text>
           </td>
         </tr>
@@ -2579,9 +2514,9 @@
 
     <xsl:variable name="suppDatasetName" select="concat('SUPP', @Name)"/>
     
-    <xsl:if test="../odm:ItemGroupDef[@Name = $suppDatasetName]">
+    <xsl:if test="key('kItemGroupDefByName', $suppDatasetName)">
       <!-- create an extra row to the SUPPXX dataset when there is one -->
-      <xsl:variable name="datasetOID" select="../odm:ItemGroupDef[@Name = $suppDatasetName]/@OID"/>
+      <xsl:variable name="datasetOID" select="key('kItemGroupDefByName', $suppDatasetName)/@OID"/>
       <tr>
         <td colspan="8">
           <xsl:text>Related Supplemental Qualifiers Dataset: </xsl:text>
@@ -2590,7 +2525,7 @@
             <xsl:value-of select="$suppDatasetName"/>
           </a>
           <xsl:text> (</xsl:text>
-          <xsl:value-of select="//odm:ItemGroupDef[@OID = $datasetOID]/odm:Description/odm:TranslatedText"/>
+          <xsl:value-of select="key('kItemGroupDef', $datasetOID)/odm:Description/odm:TranslatedText"/>
           <xsl:text>)</xsl:text>
         </td>
       </tr>
@@ -2608,9 +2543,9 @@
     <xsl:if test="substring(@Name, 1, 2)='AP'">
       <xsl:variable name="suppDatasetName" select="concat('SQAP', substring(@Name, 3))"/>
       
-      <xsl:if test="../odm:ItemGroupDef[@Name = $suppDatasetName]">
+      <xsl:if test="key('kItemGroupDefByName', $suppDatasetName)">
         <!-- create an extra row to the SUPPXX dataset when there is one -->
-        <xsl:variable name="datasetOID" select="../odm:ItemGroupDef[@Name = $suppDatasetName]/@OID"/>
+        <xsl:variable name="datasetOID" select="key('kItemGroupDefByName', $suppDatasetName)/@OID"/>
         <tr>
           <td colspan="8">
             <xsl:text>Related Supplemental Qualifiers Dataset: </xsl:text>
@@ -2619,7 +2554,7 @@
               <xsl:value-of select="$suppDatasetName"/>
             </a>
             <xsl:text> (</xsl:text>
-            <xsl:value-of select="//odm:ItemGroupDef[@OID = $datasetOID]/odm:Description/odm:TranslatedText"/>
+            <xsl:value-of select="key('kItemGroupDef', $datasetOID)/odm:Description/odm:TranslatedText"/>
             <xsl:text>)</xsl:text>
           </td>
         </tr>
@@ -2635,13 +2570,13 @@
     
     <xsl:param name="OID" />
     
-    <xsl:variable name="Domain" select="$g_seqItemGroupDefs[@OID=$OID]/@Domain"/>
-    <xsl:variable name="Name" select="$g_seqItemGroupDefs[@OID=$OID]/@Name"/>
+    <xsl:variable name="Domain" select="key('kItemGroupDef', $OID)/@Domain"/>
+    <xsl:variable name="Name" select="key('kItemGroupDef', $OID)/@Name"/>
     <xsl:variable name="ParentDescription" select="$g_seqItemGroupDefs[@Domain = $Domain and @Domain = @Name and @Name != $Name]/odm:Description/odm:TranslatedText"/>
         
     <xsl:choose>
       <xsl:when test="odm:Alias[@Context='DomainDescription']">
-        <xsl:value-of select="odm:Alias/@Name"/>
+        <xsl:value-of select="odm:Alias[@Context='DomainDescription']/@Name"/>
       </xsl:when>
       <xsl:otherwise>
         <xsl:value-of select="$ParentDescription"/>
@@ -2659,9 +2594,9 @@
     <xsl:param name="element" select="'p'"/>
     
     <xsl:if test="$CommentOID">
-      <xsl:variable name="Comment" select="$g_seqCommentDefs[@OID=$CommentOID]"/>
+      <xsl:variable name="Comment" select="key('kCommentDef', $CommentOID)"/>
       <xsl:variable name="CommentTranslatedText">
-        <xsl:value-of select="normalize-space($g_seqCommentDefs[@OID=$CommentOID]/odm:Description/odm:TranslatedText)"/>
+        <xsl:value-of select="normalize-space(key('kCommentDef', $CommentOID)/odm:Description/odm:TranslatedText)"/>
       </xsl:variable> 
  
       <xsl:element name="{$element}">  
@@ -2789,8 +2724,8 @@
     <xsl:param name="MethodPrefix"/>
     
     <xsl:if test="$MethodOID">
-      <xsl:variable name="Method" select="$g_seqMethodDefs[@OID=$MethodOID]"/>
-      <xsl:variable name="MethodType" select="$g_seqMethodDefs[@OID=$MethodOID]/@Type"/>
+      <xsl:variable name="Method" select="key('kMethodDef', $MethodOID)"/>
+      <xsl:variable name="MethodType" select="key('kMethodDef', $MethodOID)/@Type"/>
       <xsl:variable name="MethodTranslatedText" select="$Method/odm:Description/odm:TranslatedText"/>
       <xsl:variable name="MethodFormalExpression" select="$Method/odm:FormalExpression"/>
       
@@ -2922,14 +2857,14 @@
     <xsl:variable name="suppDatasetName" select="concat('SUPP', $datasetName)"/>
     <xsl:variable name="sqDatasetName" select="concat('SQ', $datasetName)"/>
     
-    <xsl:variable name="ItemDef" select="$g_seqItemDefs[@Name='QVAL']" />
-    <xsl:variable name="ItemDefValueListOID" select="$ItemDef[@OID=$g_seqItemGroupDefs[@Name = $suppDatasetName or @Name = $sqDatasetName]/odm:ItemRef/@ItemOID]/def:ValueListRef/@ValueListOID" />
+    <xsl:variable name="ItemDef" select="key('kItemDefByName', 'QVAL')" />
+    <xsl:variable name="ItemDefValueListOID" select="$ItemDef[@OID=(key('kItemGroupDefByName', $suppDatasetName) | key('kItemGroupDefByName', $sqDatasetName))/odm:ItemRef/@ItemOID]/def:ValueListRef/@ValueListOID" />
     
-    <xsl:for-each select="odm:ItemRef|$g_seqValueListDefs[@OID=$ItemDefValueListOID]/odm:ItemRef">
+    <xsl:for-each select="odm:ItemRef|key('kValueListDef', $ItemDefValueListOID)/odm:ItemRef">
       <xsl:sort select="@KeySequence" data-type="number" order="ascending"/>
       <xsl:if test="@KeySequence[ .!='' ]">
       <xsl:variable name="ItemOID" select="@ItemOID"/>
-      <xsl:variable name="Name" select="$g_seqItemDefs[@OID=$ItemOID]"/>
+      <xsl:variable name="Name" select="key('kItemDef', $ItemOID)"/>
       <xsl:if test="../@OID = $ItemDefValueListOID">QNAM.</xsl:if>  
       <xsl:value-of select="$Name/@Name"/>
       <xsl:if test="position() != last()">, </xsl:if>
@@ -2953,8 +2888,16 @@
       <xsl:text>, </xsl:text><xsl:value-of select="$ParentDescription"/><xsl:text></xsl:text>
     </xsl:if>
     <xsl:text>) - </xsl:text>
-    
-    <xsl:value-of select="@def:Class"/>
+
+    <!-- the class is the def:Class attribute in Define-XML v2.0 and the def:Class element in v2.1 -->
+    <xsl:choose>
+      <xsl:when test="@def:Class">
+        <xsl:value-of select="@def:Class"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:value-of select="def:Class/@Name"/>
+      </xsl:otherwise>
+    </xsl:choose>
     <xsl:text> </xsl:text>
     
     <!--  Define-XML v2.1 -->
@@ -3069,21 +3012,21 @@
     
       <xsl:if test="$Nwhereclauses &gt; 1"><xsl:text>(</xsl:text></xsl:if>
       <xsl:variable name="whereOID" select="./@WhereClauseOID"/>
-      <xsl:variable name="whereDef" select="$g_seqWhereClauseDefs[@OID=$whereOID]"/>
+      <xsl:variable name="whereDef" select="key('kWhereClauseDef', $whereOID)"/>
       
-      <xsl:if test="count($g_seqWhereClauseDefs[@OID=$whereOID])=0">
+      <xsl:if test="count(key('kWhereClauseDef', $whereOID))=0">
         <span class="unresolved">[unresolved: <xsl:value-of select="$whereOID"/>]</span>
       </xsl:if>
       
       <xsl:for-each select="$whereDef/odm:RangeCheck">
         
         <xsl:variable name="whereRefItemOID" select="./@def:ItemOID"/>
-        <xsl:variable name="whereRefItemName" select="$g_seqItemDefs[@OID=$whereRefItemOID]/@Name"/>
+        <xsl:variable name="whereRefItemName" select="key('kItemDef', $whereRefItemOID)/@Name"/>
         <xsl:variable name="whereOP" select="./@Comparator"/>
         <xsl:variable name="whereRefItemCodeListOID"
-          select="$g_seqItemDefs[@OID=$whereRefItemOID]/odm:CodeListRef/@CodeListOID"/>
+          select="key('kItemDef', $whereRefItemOID)/odm:CodeListRef/@CodeListOID"/>
         <xsl:variable name="whereRefItemCodeList"
-          select="$g_seqCodeLists[@OID=$whereRefItemCodeListOID]"/>
+          select="key('kCodeList', $whereRefItemCodeListOID)"/>
         
         <xsl:call-template name="ItemGroupItemLink">
           <xsl:with-param name="ItemGroupOID" select="$ItemGroupLink"/>
@@ -3110,7 +3053,7 @@
               <span class="linebreakcell">
                 <xsl:call-template name="displayValue">
                   <xsl:with-param name="Value" select="$CheckValueINNOTIN"/>
-                  <xsl:with-param name="DataType" select="$g_seqItemDefs[@OID=$whereRefItemOID]/@DataType"/>
+                  <xsl:with-param name="DataType" select="key('kItemDef', $whereRefItemOID)/@DataType"/>
                   <xsl:with-param name="decode" select="$decode"/>
                   <xsl:with-param name="CodeList" select="$whereRefItemCodeList"/>
                 </xsl:call-template>
@@ -3127,7 +3070,7 @@
             <xsl:value-of select="$Comparator_EQ"/>
             <xsl:call-template name="displayValue">
               <xsl:with-param name="Value" select="$CheckValueEQ"/>
-              <xsl:with-param name="DataType" select="$g_seqItemDefs[@OID=$whereRefItemOID]/@DataType"/>
+              <xsl:with-param name="DataType" select="key('kItemDef', $whereRefItemOID)/@DataType"/>
               <xsl:with-param name="decode" select="$decode"/>
               <xsl:with-param name="CodeList" select="$whereRefItemCodeList"/>
             </xsl:call-template>
@@ -3138,7 +3081,7 @@
             <xsl:value-of select="$Comparator_NE"/> 
             <xsl:call-template name="displayValue">
               <xsl:with-param name="Value" select="$CheckValueNE"/>
-              <xsl:with-param name="DataType" select="$g_seqItemDefs[@OID=$whereRefItemOID]/@DataType"/>
+              <xsl:with-param name="DataType" select="key('kItemDef', $whereRefItemOID)/@DataType"/>
               <xsl:with-param name="decode" select="$decode"/>
               <xsl:with-param name="CodeList" select="$whereRefItemCodeList"/>
             </xsl:call-template>
@@ -3166,7 +3109,7 @@
             </xsl:choose>
             <xsl:call-template name="displayValue">
               <xsl:with-param name="Value" select="$CheckValueOTH"/>
-              <xsl:with-param name="DataType" select="$g_seqItemDefs[@OID=$whereRefItemOID]/@DataType"/>
+              <xsl:with-param name="DataType" select="key('kItemDef', $whereRefItemOID)/@DataType"/>
               <xsl:with-param name="decode" select="$decode"/>
               <xsl:with-param name="CodeList" select="$whereRefItemCodeList"/>
             </xsl:call-template>            
@@ -3199,12 +3142,16 @@
     <xsl:param name="decode"/>
     <xsl:param name="CodeList"/>
 
-    <xsl:if test="$DataType != 'integer' and $DataType != 'float'">
-      <xsl:text>"</xsl:text><xsl:value-of select="$Value"/><xsl:text>"</xsl:text>
-    </xsl:if>
-    <xsl:if test="$DataType = 'integer' or $DataType = 'float'">
-      <xsl:value-of select="$Value"/>
-    </xsl:if>
+    <!-- xsl:choose rather than two complementary tests: when the ItemOID is unresolved, $DataType is
+         an empty node-set, both tests are false, and the value would never be printed -->
+    <xsl:choose>
+      <xsl:when test="$DataType = 'integer' or $DataType = 'float'">
+        <xsl:value-of select="$Value"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:text>"</xsl:text><xsl:value-of select="$Value"/><xsl:text>"</xsl:text>
+      </xsl:otherwise>
+    </xsl:choose>
     <xsl:if test="$decode='1'">
       <xsl:if test="$CodeList/odm:CodeListItem[@CodedValue=$Value]">
         <xsl:text> (</xsl:text>  
@@ -3223,8 +3170,8 @@
     <xsl:param name="ItemOID"/>
     <xsl:param name="ItemName"/>
     <xsl:choose>
-      <xsl:when test="$g_seqItemGroupDefs[@OID=$ItemGroupOID]/odm:ItemRef[@ItemOID=$ItemOID]">
-        <xsl:variable name="ItemDescription" select="$g_seqItemDefs[@OID=$ItemOID]/odm:Description/odm:TranslatedText"/>
+      <xsl:when test="key('kItemGroupDef', $ItemGroupOID)/odm:ItemRef[@ItemOID=$ItemOID]">
+        <xsl:variable name="ItemDescription" select="key('kItemDef', $ItemOID)/odm:Description/odm:TranslatedText"/>
         <a>
           <xsl:attribute name="href">#<xsl:value-of select="$ItemGroupOID"/>.<xsl:value-of select="$ItemOID"/></xsl:attribute>
           <xsl:attribute name="title"><xsl:value-of select="$ItemDescription"/></xsl:attribute>
@@ -3233,12 +3180,12 @@
       </xsl:when>
       <xsl:otherwise>
         <!-- Item is not in current ItemGroup; only link when Item can be uniquely found in other ItemGroup -->
-        <xsl:variable name="linkItems" select="count($g_seqItemGroupDefs/odm:ItemRef[@ItemOID=$ItemOID])"/>
+        <xsl:variable name="linkItems" select="count(key('kItemGroupItemRef', $ItemOID))"/>
         <xsl:choose>
           <xsl:when test="$linkItems = 1">
-            <xsl:variable name="ItemDescription" select="$g_seqItemDefs[@OID=$ItemOID]/odm:Description/odm:TranslatedText"/>
+            <xsl:variable name="ItemDescription" select="key('kItemDef', $ItemOID)/odm:Description/odm:TranslatedText"/>
             <a>
-              <xsl:attribute name="href">#<xsl:value-of select="$g_seqItemGroupDefs/odm:ItemRef[@ItemOID=$ItemOID]/../@OID"/>.<xsl:value-of select="$ItemOID"/></xsl:attribute>
+              <xsl:attribute name="href">#<xsl:value-of select="key('kItemGroupItemRef', $ItemOID)/../@OID"/>.<xsl:value-of select="$ItemOID"/></xsl:attribute>
               <xsl:attribute name="title"><xsl:value-of select="$ItemDescription"/></xsl:attribute>
               <xsl:value-of select="$ItemName"/>
             </a>
@@ -3260,7 +3207,7 @@
   <xsl:template name="displayItemDefDecodeList">
     <xsl:param name="itemDef"/>
     <xsl:variable name="CodeListOID" select="$itemDef/odm:CodeListRef/@CodeListOID"/>
-    <xsl:variable name="CodeListDef" select="$g_seqCodeLists[@OID=$CodeListOID]"/>
+    <xsl:variable name="CodeListDef" select="key('kCodeList', $CodeListOID)"/>
     <xsl:variable name="n_items" select="count($CodeListDef/odm:CodeListItem|$CodeListDef/odm:EnumeratedItem)"/>
   	<xsl:variable name="CodeListDataType" select="$CodeListDef/@DataType" />
 
@@ -3302,7 +3249,7 @@
         </xsl:when>
         <xsl:otherwise>
           <xsl:choose>
-            <xsl:when test="$g_seqCodeLists[@OID=$CodeListOID]">
+            <xsl:when test="key('kCodeList', $CodeListOID)">
               <a href="#CL.{$CodeListDef/@OID}">
                 <xsl:value-of select="$CodeListDef/@Name"/>
               </a>
@@ -4238,7 +4185,7 @@ document.onclick = function(e)
           color: black;
         }
         .external-link-gif,
-        .formalexpression-reference
+        .formalexpression-reference,
         .valuelist-reference{
           display: none !important;
           width: 0px;

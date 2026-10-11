@@ -437,3 +437,32 @@ def test_cli_permissive(non_conformant_define: Path):
 
     assert completed.returncode == 0
     assert b"NOTE: loaded in permissive mode" in completed.stdout
+
+
+def test_cli_unexpected_error_returns_1_with_a_traceback(monkeypatch, capsys):
+    from defineutils.metrics import __main__ as metrics_cli
+
+    def crash(self):
+        raise RuntimeError("simulated defect")
+
+    monkeypatch.setattr(DefineMetrics, "collect", crash)
+    monkeypatch.setattr(sys, "argv", ["metrics", "-d", str(define_file())])
+
+    assert metrics_cli.main() == 1
+    stderr = capsys.readouterr().err
+    assert "Traceback" in stderr
+    assert "RuntimeError: simulated defect" in stderr
+
+
+def test_cli_broken_pipe_is_left_to_the_entry_point(monkeypatch):
+    # quitting a pager exits 0 at the entry point; main() must not report it as a crash
+    from defineutils.metrics import __main__ as metrics_cli
+
+    def closed_pipe(self):
+        raise BrokenPipeError()
+
+    monkeypatch.setattr(DefineMetrics, "collect", closed_pipe)
+    monkeypatch.setattr(sys, "argv", ["metrics", "-d", str(define_file())])
+
+    with pytest.raises(BrokenPipeError):
+        metrics_cli.main()

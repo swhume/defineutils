@@ -10,7 +10,12 @@ The defineutils package currently includes 5 modules:
 5. `metrics.py`: reports metrics for a define.xml file
 
 The `definehtml.py` module includes the Define-XML v2.1 style sheet to simplify usage. It generates a define.html file,
-or alternatively will generate an HTML string.
+or alternatively returns the HTML as a string. It renders Define-XML v2.1 only: a file in another Define-XML version,
+or one that is not well-formed, is refused with an error that recommends the validate module, rather than rendered
+with content silently missing. Links in the define.xml that use a scheme other than http, https or file (such as
+`javascript:`) are shown as text rather than as links. The stylesheet's display options are available as arguments:
+the Comments table, the Methods table, `[Comment]`/`[Method]`/`[Origin]` prefixes, the Length / Significant Digits /
+Display Format column, and how many codelist terms are listed in the Controlled Terms column.
 
 The `validate.py` module includes the Define-XML v2.1 schema to simplify usage. It schema validates a define.xml file
 and reports every schema validation error it finds, not just the first one. Errors that say the same thing about the
@@ -46,12 +51,22 @@ from pathlib import Path
 from defineutils.definehtml import DefineHtml, DefineHtmlGenerationError
 
 out_file = Path(__file__).parent.joinpath("define.html")
-dh = DefineHtml(Path(__file__).parent.joinpath("define.xml"))
-dh.transform_to_html_file(out_file)
+try:
+    dh = DefineHtml(Path(__file__).parent.joinpath("define.xml"))
+    dh.transform_to_html_file(out_file)
+except DefineHtmlGenerationError as e:
+    print(e)
+
+# or get the HTML as a string, here with the Comments table added
+html = DefineHtml(Path(__file__).parent.joinpath("define.xml"), comments_table=True).transform_to_html_string()
 ```
 
-The above code applies the Define-XML v2.1 stylesheet to the define.xml to generation the define.html file. The 
-stylesheet is embedded in the module. For error handling, use the custom DefineHtmlGenerationError exception.
+The above code applies the Define-XML v2.1 stylesheet to the define.xml to generate the define.html file. The
+stylesheet is embedded in the module. Every failure raises the custom DefineHtmlGenerationError exception: a missing,
+unreadable or malformed define.xml, a file that is not Define-XML v2.1, a stylesheet error, or an output file that
+cannot be written or that is the input define.xml itself. `transform_to_html_string()` returns a `str`. The display
+options are keyword arguments to `DefineHtml`: `codelist_items` (default 5), `methods_table` (default True),
+`comments_table`, `prefixes` and `length_format` (default False).
 
 Example code used to schema validate a define.xml:
 ```python
@@ -181,10 +196,17 @@ table, and the `total_variable_refs` property, count only the ItemRefs belonging
 When you run a module with the -m switch it will execute the defineutils modules from the command-line. For example,
 to transform a define.xml file into HTML using the stylesheet, the following command-line example executes the module
 to generate define.html. The -m parameter instructs Python to run the module as an application. The definehtml program
-uses the -d parameter to specify the define.xml file path and the -o to specify the define.html file path.
+uses the required -d parameter to specify the define.xml file path and the optional -o to specify the define.html file
+path; without -o the HTML is written beside the define.xml with an .html extension (tests/define.html below). The
+display options are --comments-table, --no-methods-table, --prefixes, --length-format and --codelist-items N. The exit
+code is 0 when the HTML was written, 2 when it was not (the message is printed to stderr), and 1 for an unexpected
+error.
 
 ```commandline
 python3 -m defineutils.definehtml -d tests/define.xml -o tests/define.html
+
+# write tests/define.html, including the Comments table
+python3 -m defineutils.definehtml -d tests/define.xml --comments-table
 ```
 
 The validate command can be executed using the command-line the same way. For validate, only the -d parameter is 
@@ -352,8 +374,9 @@ SUMMARY
 the report says so rather than staying silent about it.
 
 metrics sets an exit code: 0 when the report was produced, and 2 when it could not be -- the define.xml is missing or
-would not load, or the report could not be written. Unlike validate and definerefs it never exits 1, because a
-metrics report describes a define.xml rather than judging it.
+would not load, or the report could not be written. 1 means only that an unexpected error occurred, and its traceback
+is printed to stderr. Unlike validate and definerefs, metrics never exits 1 to judge the define.xml, because a metrics
+report describes a define.xml rather than judging it.
 
 If you are running defineutils from the source code using a virtual environment, you may need to activate that virtual
 environment before running the code from the command-line.
