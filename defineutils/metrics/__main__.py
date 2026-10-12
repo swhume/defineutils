@@ -3,6 +3,7 @@ import sys
 import traceback
 from pathlib import Path
 import argparse
+from defineutils import __version__
 from defineutils.metrics import DefineMetrics, DefineMetricsError
 
 def main():
@@ -50,7 +51,8 @@ def set_cmd_line_args():
     get the command-line arguments needed to report metrics on the define.xml input file
     :return: return the argparse object with the command-line parameters
     """
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(prog="definemetrics")
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     parser.add_argument("-d", "--define", help="path and file name of the define.xml file to "
                         "report on", required=True, dest="define")
     parser.add_argument("-o", "--out", help="path and file name of the report to create; "
@@ -64,10 +66,16 @@ def set_cmd_line_args():
     args = parser.parse_args()
     return args
 
-if __name__ == "__main__":
+def run():
+    """the entry point for both the definemetrics command and python -m: exits with main()'s
+    code. The command calls run() directly, never this module's __main__ block, so Ctrl-C and a
+    closed pager are handled here"""
     try:
         sys.exit(main())
     except KeyboardInterrupt:
         _quiet_exit(130)
     except BrokenPipeError:
         _quiet_exit(0)
+
+if __name__ == "__main__":
+    run()

@@ -29,12 +29,14 @@ defineutils is a Python package for working with CDISC Define-XML v2.1 files. It
 
 ### Install dependencies
 ```bash
-pip install -e .
+pip install -e .   # also creates the five commands; re-run after the version or [project.scripts] changes
 ```
 
 ### Run tests
 ```bash
 pytest
+# run the CLI tests against a folder of commands (installed console scripts, or later a frozen build)
+DEFINEUTILS_BIN=.venv/bin pytest
 ```
 
 ### Run a single test
@@ -42,25 +44,28 @@ pytest
 pytest tests/test_definehtml.py::test_transform_to_html_string_basic
 ```
 
-### Run modules from command line
+### Run the commands
+Each command is equivalent to `python -m defineutils.<module>` (definevalidate is `defineutils.validate`,
+definemetrics is `defineutils.metrics`); the `python -m` form also works uninstalled from the repo root. Every
+command takes `--version`.
 ```bash
 # Transform define.xml to HTML (omit -o to write <define name>.html beside the input; add --comments-table,
 # --no-methods-table, --prefixes, --length-format, --codelist-items N as needed)
-python -m defineutils.definehtml -d tests/define.xml -o tests/define.html
+definehtml -d tests/define.xml -o tests/define.html
 
 # Schema validate a define.xml (add -s for a schema other than the bundled v2.1; -o, --json, -L as needed)
-python -m defineutils.validate -d tests/define.xml
-python -m defineutils.validate -d tests/define.xml -s cdisc-define-2.0/define2-0-0.xsd
-python -m defineutils.validate -d tests/define.xml --json -o report.json
+definevalidate -d tests/define.xml
+definevalidate -d tests/define.xml -s cdisc-define-2.0/define2-0-0.xsd
+definevalidate -d tests/define.xml --json -o report.json
 
 # Pretty-print a define.xml to a file (omit -o to print to the console; -H limits console lines)
-python -m defineutils.definepp -d tests/define.xml -o tests/define.pretty.xml
+definepp -d tests/define.xml -o tests/define.pretty.xml
 
 # Check OID references/definitions (add --json, --errors-only, -L, --permissive as needed)
-python -m defineutils.definerefs -d tests/define.xml
+definerefs -d tests/define.xml
 
 # Report define.xml metrics (add -o, --json, --no-datasets, --permissive as needed)
-python -m defineutils.metrics -d tests/define.xml
+definemetrics -d tests/define.xml
 ```
 
 ## Architecture
@@ -75,7 +80,18 @@ The package is structured as `defineutils` with five submodules:
 Each submodule follows the same pattern:
 - Main class in `<submodule>.py` with a custom exception class
 - `__init__.py` exports the main class and exception
-- `__main__.py` enables CLI usage via `python -m defineutils.<submodule>`
+- `__main__.py` holds the CLI: `main()` parses the arguments and returns the exit code, and `run()` is the entry
+  point for both the console script (`[project.scripts]` in `pyproject.toml`) and `python -m`
+
+CLI invariants:
+- The console scripts call `run()` directly and never execute the `if __name__ == "__main__":` block, so the Ctrl-C /
+  broken-pipe handling must stay in `run()`. Point a new command at `run`, not `main`.
+- Each parser sets `prog=` to its command name (otherwise usage reads `__main__.py`, or `definehtml.exe` once frozen)
+  and has `--version`.
+- Messages that tell the user to run another tool name the command (`definevalidate -d <file>`), never
+  `python -m ...`, which does not exist for users of a frozen build.
+- CLI tests start processes only through the `run_cli` / `cli_command` fixtures in `tests/conftest.py`, so setting
+  `DEFINEUTILS_BIN` re-runs them all against the installed or frozen commands.
 
 **definehtml module**: Uses lxml for XSLT transformation. `DefineHtml` compiles the bundled `define2-1.xsl` (the
 module-level `STYLESHEET`) once in `__init__` and renders via `transform_to_html_string()`, which returns `str`, or
@@ -168,13 +184,13 @@ every problem nor where each one lives. Two gaps in odmlib 0.2.0 are filled here
 wins and nothing is double-reported), and uniqueness for the `skip_elem` classes, which odmlib exempts before its
 duplicate test. Reports come from `check_to_string()`, `check_to_file()`, `check_to_console()` and `check_to_json()`;
 errors are dangling references, duplicate OIDs and type mismatches, while orphan definitions are warnings. Raises
-`DefineRefCheckError`, whose load-failure message recommends the validate module. This module bundles no resources
+`DefineRefCheckError`, whose load-failure message recommends `definevalidate`. This module bundles no resources
 and sets exit codes (0 clean, 1 errors, 2 could not check).
 
 **metrics module**: Uses odmlib to load the define.xml into the `define_2_1` model and report file/study identity,
 a count for every element type, and a per-dataset table. `DefineMetrics.collect()` returns a `MetricsResult` cached on
 `self._result`; `collect_to_string()` / `_to_file()` / `_to_console()` / `_to_json()` all reuse it. Raises
-`DefineMetricsError`, reusing definerefs' load-failure wording (recommends the validate module, and suggests
+`DefineMetricsError`, reusing definerefs' load-failure wording (recommends `definevalidate`, and suggests
 `--permissive` only when a permissive load of that file actually succeeds). Bundles no resources.
 
 The counted element list is **derived from the model, never hand-coded**: `_element_inventory()` walks the closure of
@@ -200,7 +216,6 @@ outside it raises. Element counts are per element type across the whole document
 table's `Variables` column and `total_variable_refs` count only `len(ItemGroupDef.ItemRef)` (155) -- the two numbers
 differ by design. Exit codes are 0 (report produced), 2 (could not be produced) and 1 (an unexpected exception, with
 the traceback on stderr). 1 never judges the file, because a metrics report describes a file rather than judging it.
-`main()` re-raises `BrokenPipeError` ahead of its `except Exception`, so quitting a pager still exits 0 at the entry
-point.
+`main()` re-raises `BrokenPipeError` ahead of its `except Exception`, so quitting a pager still exits 0 in `run()`.
 
 The definehtml and validate modules bundle their required resources (XSL stylesheet, XSD schemas) to simplify usage.

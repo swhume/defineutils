@@ -2,6 +2,7 @@ import sys
 import traceback
 from pathlib import Path
 import argparse
+from defineutils import __version__
 from defineutils.definehtml import DefineHtml, DefineHtmlGenerationError
 
 def main():
@@ -33,7 +34,8 @@ def set_cmd_line_args():
     get the command-line arguments needed to convert the define.xml input file into HTML using XSL
     :return: return the argparse object with the command-line parameters
     """
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(prog="definehtml")
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     parser.add_argument("-d", "--define", help="path and file name of the define.xml file",
                         required=True, dest="define")
     parser.add_argument("-o", "--out", help="path and file name of HTML file to create; omit to "
@@ -55,9 +57,16 @@ def set_cmd_line_args():
     args = parser.parse_args()
     return args
 
-if __name__ == "__main__":
+def run():
+    """
+    the entry point for both the definehtml command and python -m: exits with main()'s code. The
+    command calls run() directly, never this module's __main__ block, so Ctrl-C is handled here
+    """
     try:
         sys.exit(main())
     except KeyboardInterrupt:
         # 130 == 128 + SIGINT, the conventional Ctrl-C status
         sys.exit(130)
+
+if __name__ == "__main__":
+    run()

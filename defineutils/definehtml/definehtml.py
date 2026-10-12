@@ -108,7 +108,7 @@ class DefineHtml:
                 f"Unable to parse {self.define}: it is not well-formed XML.\n"
                 f"  {e}\n\n"
                 f"No HTML was generated. Run the validate utility to identify the problems:\n\n"
-                f"    python -m defineutils.validate -d {self.define}") from e
+                f"    definevalidate -d {self.define}") from e
         except OSError as e:
             raise DefineHtmlGenerationError(f"Unable to read {self.define}.\n  {e}") from e
 
@@ -140,7 +140,7 @@ class DefineHtml:
             f"No HTML was generated. The bundled stylesheet renders Define-XML v2.1 only, and would\n"
             f"silently drop most of the content of any other file. Run the validate utility to check\n"
             f"the file:\n\n"
-            f"    python -m defineutils.validate -d {self.define}")
+            f"    definevalidate -d {self.define}")
 
     def _transform_error_message(self, e: etree.XSLTApplyError) -> str:
         """

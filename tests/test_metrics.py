@@ -1,6 +1,5 @@
 import inspect
 import json
-import subprocess
 import sys
 from collections import Counter
 from pathlib import Path
@@ -349,7 +348,7 @@ def test_malformed_file_recommends_the_validate_utility(tmp_path: Path):
     bad_xml = tmp_path / "bad.xml"
     bad_xml.write_text("<ODM><broken></ODM>", encoding="utf-8")
 
-    with pytest.raises(DefineMetricsError, match="python -m defineutils.validate"):
+    with pytest.raises(DefineMetricsError, match="definevalidate -d"):
         DefineMetrics(bad_xml).collect()
 
 
@@ -374,66 +373,59 @@ def test_unwritable_out_file_raises(tmp_path: Path):
 
 # the CLI
 
-def _run_cli(*cli_args) -> subprocess.CompletedProcess:
-    """Run `python -m defineutils.metrics` from the repo root so the package resolves
-    whether or not it is installed."""
-    return subprocess.run([sys.executable, "-m", "defineutils.metrics", *cli_args],
-                          capture_output=True, cwd=str(data_path().parent))
-
-
-def test_cli_exit_code_success():
-    completed = _run_cli("-d", str(define_file()))
+def test_cli_exit_code_success(run_cli):
+    completed = run_cli("definemetrics", "-d", str(define_file()))
 
     assert completed.returncode == 0
     assert b"Define-XML metrics" in completed.stdout
     assert b"Traceback" not in completed.stderr
 
 
-def test_cli_exit_code_missing_file():
-    completed = _run_cli("-d", "does_not_exist.xml")
+def test_cli_exit_code_missing_file(run_cli):
+    completed = run_cli("definemetrics", "-d", "does_not_exist.xml")
 
     assert completed.returncode == 2
     assert b"not found" in completed.stderr
     assert completed.stdout == b""
 
 
-def test_cli_exit_code_load_failure(tmp_path: Path):
+def test_cli_exit_code_load_failure(tmp_path: Path, run_cli):
     bad_xml = tmp_path / "bad.xml"
     bad_xml.write_text("<ODM><broken></ODM>", encoding="utf-8")
 
-    completed = _run_cli("-d", str(bad_xml))
+    completed = run_cli("definemetrics", "-d", str(bad_xml))
 
     assert completed.returncode == 2
-    assert b"python -m defineutils.validate" in completed.stderr
+    assert b"definevalidate -d" in completed.stderr
     assert b"Traceback" not in completed.stderr
 
 
-def test_cli_exit_code_unwritable_out(tmp_path: Path):
-    completed = _run_cli("-d", str(define_file()), "-o", str(tmp_path))
+def test_cli_exit_code_unwritable_out(tmp_path: Path, run_cli):
+    completed = run_cli("definemetrics", "-d", str(define_file()), "-o", str(tmp_path))
 
     assert completed.returncode == 2
     assert b"Traceback" not in completed.stderr
 
 
-def test_cli_json_to_file(tmp_path: Path):
+def test_cli_json_to_file(tmp_path: Path, run_cli):
     out_file = tmp_path / "metrics.json"
 
-    completed = _run_cli("-d", str(define_file()), "-o", str(out_file), "--json")
+    completed = run_cli("definemetrics", "-d", str(define_file()), "-o", str(out_file), "--json")
 
     assert completed.returncode == 0
     assert json.loads(out_file.read_text(encoding="utf-8"))["totals"]["datasets"] == 11
 
 
-def test_cli_no_datasets():
-    completed = _run_cli("-d", str(define_file()), "--no-datasets")
+def test_cli_no_datasets(run_cli):
+    completed = run_cli("definemetrics", "-d", str(define_file()), "--no-datasets")
 
     assert completed.returncode == 0
     assert b"DATASETS" not in completed.stdout
     assert b"ELEMENT COUNTS" in completed.stdout
 
 
-def test_cli_permissive(non_conformant_define: Path):
-    completed = _run_cli("-d", str(non_conformant_define), "--permissive")
+def test_cli_permissive(non_conformant_define: Path, run_cli):
+    completed = run_cli("definemetrics", "-d", str(non_conformant_define), "--permissive")
 
     assert completed.returncode == 0
     assert b"NOTE: loaded in permissive mode" in completed.stdout

@@ -126,7 +126,7 @@ def test_invalid_xml_raises_and_recommends_the_validate_utility(tmp_path: Path):
 
     with pytest.raises(DefineHtmlGenerationError, match="not well-formed XML") as excinfo:
         DefineHtml(bad_xml).transform_to_html_string()
-    assert "python -m defineutils.validate" in str(excinfo.value)
+    assert "definevalidate -d" in str(excinfo.value)
 
 
 def test_non_xml_input_raises(tmp_path: Path):
@@ -210,7 +210,7 @@ def test_define_xml_v20_namespace_is_refused(tmp_path: Path):
     with pytest.raises(DefineHtmlGenerationError, match="not a Define-XML v2.1 document") as excinfo:
         DefineHtml(v20).transform_to_html_string()
     assert "http://www.cdisc.org/ns/def/v2.0" in str(excinfo.value)
-    assert "python -m defineutils.validate" in str(excinfo.value)
+    assert "definevalidate -d" in str(excinfo.value)
 
 
 def test_non_odm_xml_is_refused():

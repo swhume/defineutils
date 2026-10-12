@@ -1,5 +1,9 @@
-"""Fixtures shared by the definehtml tests."""
+"""Fixtures shared by the tests."""
 import itertools
+import os
+import shutil
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -8,6 +12,42 @@ from lxml import etree, html
 from defineutils.definehtml import DefineHtml
 
 DATA = Path(__file__).parent
+
+# each command, and the module python -m runs for it
+COMMANDS = {"definehtml": "defineutils.definehtml",
+            "definevalidate": "defineutils.validate",
+            "definepp": "defineutils.definepp",
+            "definerefs": "defineutils.definerefs",
+            "definemetrics": "defineutils.metrics"}
+
+
+@pytest.fixture
+def cli_command():
+    """
+    returns command(name): the argv that starts the named command. By default that is
+    python -m <module>, which resolves from the repo root whether or not the package is installed.
+    When the DEFINEUTILS_BIN environment variable names a folder of commands -- the installed
+    console scripts, or a frozen build -- the command in that folder is run instead
+    """
+    def command(name: str) -> list[str]:
+        bin_dir = os.environ.get("DEFINEUTILS_BIN")
+        if not bin_dir:
+            return [sys.executable, "-m", COMMANDS[name]]
+        found = shutil.which(name, path=bin_dir)
+        if found is None:
+            pytest.fail(f"{name} was not found in DEFINEUTILS_BIN={bin_dir}")
+        return [found]
+
+    return command
+
+
+@pytest.fixture
+def run_cli(cli_command):
+    """returns run(name, *args): runs the named command from the repo root, capturing its output"""
+    def run(name: str, *args: str) -> subprocess.CompletedProcess:
+        return subprocess.run([*cli_command(name), *args], capture_output=True, cwd=str(DATA.parent))
+
+    return run
 
 
 @pytest.fixture

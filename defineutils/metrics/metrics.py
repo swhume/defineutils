@@ -451,7 +451,7 @@ class DefineMetrics:
                    f"No metrics were collected. This file must parse as conformant\n"
                    f"{model} before its metrics can be collected. Run the validate\n"
                    f"utility to identify the problems:\n\n"
-                   f"    python -m defineutils.validate -d {self.define}\n\n"
+                   f"    definevalidate -d {self.define}\n\n"
                    f"Then re-run these metrics.")
         if not self.permissive and self._permissive_would_load():
             message += (" To collect best-effort metrics from the file as-is,\n"

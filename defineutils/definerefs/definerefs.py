@@ -235,7 +235,7 @@ class DefineRefChecker:
                    f"No reference/definition checks were run. This file must parse as conformant\n"
                    f"{model} before its OID references can be checked. Run the validate\n"
                    f"utility to identify the problems:\n\n"
-                   f"    python -m defineutils.validate -d {self.define}\n\n"
+                   f"    definevalidate -d {self.define}\n\n"
                    f"Then re-run this check.")
         if not self.permissive and self._permissive_would_load():
             message += (" To attempt a best-effort check of the file as-is,\n"

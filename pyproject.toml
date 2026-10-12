@@ -26,6 +26,14 @@ requires-python = ">=3.10"
 [project.urls]
 Homepage = "https://github.com/swhume/defineutils"
 
+[project.scripts]
+# each command calls run(), not main(): run() holds the Ctrl-C / broken-pipe handling
+definehtml = "defineutils.definehtml.__main__:run"
+definevalidate = "defineutils.validate.__main__:run"
+definepp = "defineutils.definepp.__main__:run"
+definerefs = "defineutils.definerefs.__main__:run"
+definemetrics = "defineutils.metrics.__main__:run"
+
 [tool.setuptools]
 packages = ["defineutils", "defineutils.definehtml", "defineutils.validate", "defineutils.definepp",
             "defineutils.definerefs", "defineutils.metrics"]

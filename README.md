@@ -11,7 +11,7 @@ The defineutils package currently includes 5 modules:
 
 The `definehtml.py` module includes the Define-XML v2.1 style sheet to simplify usage. It generates a define.html file,
 or alternatively returns the HTML as a string. It renders Define-XML v2.1 only: a file in another Define-XML version,
-or one that is not well-formed, is refused with an error that recommends the validate module, rather than rendered
+or one that is not well-formed, is refused with an error that recommends running definevalidate, rather than rendered
 with content silently missing. Links in the define.xml that use a scheme other than http, https or file (such as
 `javascript:`) are shown as text rather than as links. The stylesheet's display options are available as arguments:
 the Comments table, the Methods table, `[Comment]`/`[Method]`/`[Origin]` prefixes, the Length / Significant Digits /
@@ -39,6 +39,27 @@ describes, the CDISC standards it references, a count of every element, and a pe
 variables in each. The element list is derived from the Define-XML v2.1 model rather than hand-maintained, so an
 element the file does not use is reported as 0 instead of being left out -- a define.xml with no `MethodDef` at all
 says so. The report can be printed to the console, written to a text file, or emitted as JSON.
+
+## Installing defineutils
+
+defineutils needs Python 3.10 or later. Install it with pip:
+
+```commandline
+pip install defineutils
+```
+
+Installing adds five commands -- definehtml, definevalidate, definepp, definerefs and definemetrics -- described in
+[Running defineutils from the Command-line](#running-defineutils-from-the-command-line).
+
+If you only need the commands and do not have Python, [uv](https://docs.astral.sh/uv/getting-started/installation/)
+installs them in one step, downloading a suitable Python for them if none is found. Install uv, then run:
+
+```commandline
+uv tool install defineutils
+```
+
+If the commands are not found afterwards, `uv tool update-shell` adds their folder to your PATH; open a new terminal
+to pick it up. `uv tool upgrade defineutils` installs a newer release later.
 
 ## Using defineutils
 
@@ -156,7 +177,7 @@ the check, the OID, the reference attribute, the expected and actual element typ
 occurs at. Use `check_to_string()` for the formatted listing, `check_to_file()` to write it to a file,
 `check_to_console()` to print it, and `check_to_json()` for machine-readable results. A define.xml that will not load
 into the Define-XML v2.1 model cannot be checked at all, so that failure is reported via the DefineRefCheckError
-exception with a recommendation to run the validate module first. Pass `permissive=True` to attempt a best-effort
+exception with a recommendation to run definevalidate first. Pass `permissive=True` to attempt a best-effort
 check of a non-conformant file anyway.
 
 Example code used to report the metrics for a define.xml:
@@ -184,7 +205,7 @@ the report methods do not re-parse the file. Use `collect_to_string()` for the f
 `collect_to_file()` to write it to a file, `collect_to_console()` to print it, and `collect_to_json()` for
 machine-readable results; pass `show_datasets=False` to leave the per-dataset table out of the text report. A
 define.xml that will not load into the Define-XML v2.1 model is reported via the DefineMetricsError exception with a
-recommendation to run the validate module first; pass `permissive=True` to collect best-effort metrics from a
+recommendation to run definevalidate first; pass `permissive=True` to collect best-effort metrics from a
 non-conformant file anyway.
 
 Note that the element counts are per element type across the whole document, so the ItemRef count includes both the
@@ -193,43 +214,54 @@ table, and the `total_variable_refs` property, count only the ItemRefs belonging
 
 ## Running defineutils from the Command-line
 
-When you run a module with the -m switch it will execute the defineutils modules from the command-line. For example,
-to transform a define.xml file into HTML using the stylesheet, the following command-line example executes the module
-to generate define.html. The -m parameter instructs Python to run the module as an application. The definehtml program
-uses the required -d parameter to specify the define.xml file path and the optional -o to specify the define.html file
-path; without -o the HTML is written beside the define.xml with an .html extension (tests/define.html below). The
-display options are --comments-table, --no-methods-table, --prefixes, --length-format and --codelist-items N. The exit
-code is 0 when the HTML was written, 2 when it was not (the message is printed to stderr), and 1 for an unexpected
-error.
+Installing defineutils adds a command for each module:
+
+| Command | Module | What it does |
+|---|---|---|
+| `definehtml` | `defineutils.definehtml` | transforms a define.xml into a define.html |
+| `definevalidate` | `defineutils.validate` | schema validates a define.xml |
+| `definepp` | `defineutils.definepp` | pretty-prints a define.xml |
+| `definerefs` | `defineutils.definerefs` | checks the OID references and definitions in a define.xml |
+| `definemetrics` | `defineutils.metrics` | reports the metrics for a define.xml |
+
+Each command does the same as running its module with Python's -m switch, so `definehtml -d tests/define.xml` and
+`python3 -m defineutils.definehtml -d tests/define.xml` are equivalent. Every command takes --help to list its
+parameters and --version to show the defineutils version.
+
+The definehtml command transforms a define.xml file into HTML using the stylesheet. It uses the required -d parameter
+to specify the define.xml file path and the optional -o to specify the define.html file path; without -o the HTML is
+written beside the define.xml with an .html extension (tests/define.html below). The display options are
+--comments-table, --no-methods-table, --prefixes, --length-format and --codelist-items N. The exit code is 0 when the
+HTML was written, 2 when it was not (the message is printed to stderr), and 1 for an unexpected error.
 
 ```commandline
-python3 -m defineutils.definehtml -d tests/define.xml -o tests/define.html
+definehtml -d tests/define.xml -o tests/define.html
 
 # write tests/define.html, including the Comments table
-python3 -m defineutils.definehtml -d tests/define.xml --comments-table
+definehtml -d tests/define.xml --comments-table
 ```
 
-The validate command can be executed using the command-line the same way. For validate, only the -d parameter is 
-required to indicate the file path of the define.xml to validate. The -s parameter is optional and gives the file path
+The definevalidate command schema validates a define.xml. Only the -d parameter is required, to indicate the file
+path of the define.xml to validate. The -s parameter is optional and gives the file path
 of the schema to validate against; without it the bundled Define-XML v2.1 schema is used. Without -o the formatted
 listing goes to the console; with -o it is written to the given file. The --json switch emits machine-readable results
 instead of the listing, and -L sets how many example locations are shown per finding (0 shows all).
 
 ```commandline
 # validate against the bundled Define-XML v2.1 schema
-python3 -m defineutils.validate -d tests/define.xml
+definevalidate -d tests/define.xml
 
 # validate against a different version of the schema
-python3 -m defineutils.validate -d tests/define.xml -s cdisc-define-2.0/define2-0-0.xsd
+definevalidate -d tests/define.xml -s cdisc-define-2.0/define2-0-0.xsd
 
 # save the listing to a file
-python3 -m defineutils.validate -d tests/define.xml -o validation_report.txt
+definevalidate -d tests/define.xml -o validation_report.txt
 
 # machine-readable results for CI or other tooling
-python3 -m defineutils.validate -d tests/define.xml --json
+definevalidate -d tests/define.xml --json
 
 # show every location of every error, rather than the first 5 per finding
-python3 -m defineutils.validate -d tests/define.xml -L 0
+definevalidate -d tests/define.xml -L 0
 ```
 
 The listing names the file and the schema, then each distinct problem with the places it occurs:
@@ -253,7 +285,7 @@ SUMMARY
   Schema: defineutils/validate/schema/cdisc-odm-1.3.2/ODM1-3-2.xsd
 ```
 
-validate sets an exit code so it can gate a CI job: 0 when the define.xml is valid, 1 when it is invalid, and 2 when
+definevalidate sets an exit code so it can gate a CI job: 0 when the define.xml is valid, 1 when it is invalid, and 2 when
 the validation could not be run at all -- the schema would not load, the define.xml could not be read or parsed, or the
 report could not be written. The report is written to stdout and the failure messages to stderr, so a redirected report
 stays clean.
@@ -265,13 +297,13 @@ of lines shown.
 
 ```commandline
 # write the formatted define.xml to a file
-python3 -m defineutils.definepp -d tests/define.xml -o tests/define.pretty.xml
+definepp -d tests/define.xml -o tests/define.pretty.xml
 
 # print the formatted define.xml to the console, one screen at a time
-python3 -m defineutils.definepp -d tests/define.xml | more
+definepp -d tests/define.xml | more
 
 # print only the first 40 lines to the console
-python3 -m defineutils.definepp -d tests/define.xml -H 40
+definepp -d tests/define.xml -H 40
 ```
 
 The definerefs command checks the OID references and definitions in a define.xml. Use the -d parameter to specify
@@ -282,47 +314,47 @@ attempts a best-effort check of a define.xml that is not conformant enough to lo
 
 ```commandline
 # print the listing to the console
-python3 -m defineutils.definerefs -d tests/define.xml
+definerefs -d tests/define.xml
 
 # save the listing to a file
-python3 -m defineutils.definerefs -d tests/define.xml -o refdef_report.txt
+definerefs -d tests/define.xml -o refdef_report.txt
 
 # machine-readable results for CI or other tooling
-python3 -m defineutils.definerefs -d tests/define.xml --json
+definerefs -d tests/define.xml --json
 
 # errors only, with every location listed
-python3 -m defineutils.definerefs -d tests/define.xml --errors-only -L 0
+definerefs -d tests/define.xml --errors-only -L 0
 
 # best-effort check of a non-conformant define.xml
-python3 -m defineutils.definerefs -d broken_define.xml --permissive
+definerefs -d broken_define.xml --permissive
 ```
 
-definerefs sets an exit code, like validate, so it can gate a CI job: 0 when there are no errors (a clean
+definerefs sets an exit code, like definevalidate, so it can gate a CI job: 0 when there are no errors (a clean
 define.xml, or one that only has orphan definition warnings), 1 when there are errors (dangling references,
 duplicate OIDs or type mismatches), and 2 when the check could not be run at all -- the define.xml would not load,
-or the report could not be written. A file that will not load is reported with a recommendation to run the validate
-module to find out why.
+or the report could not be written. A file that will not load is reported with a recommendation to run definevalidate
+to find out why.
 
-The metrics command reports what is in a define.xml. Use the -d parameter to specify the define.xml file path.
+The definemetrics command reports what is in a define.xml. Use the -d parameter to specify the define.xml file path.
 Without -o the report goes to the console; with -o it is written to the given file. The --json switch emits
 machine-readable results instead of the report, --no-datasets leaves the per-dataset table out, and --permissive
 collects best-effort metrics from a define.xml that is not conformant enough to load normally.
 
 ```commandline
 # print the report to the console
-python3 -m defineutils.metrics -d tests/define.xml
+definemetrics -d tests/define.xml
 
 # save the report to a file
-python3 -m defineutils.metrics -d tests/define.xml -o metrics_report.txt
+definemetrics -d tests/define.xml -o metrics_report.txt
 
 # machine-readable results for CI or other tooling
-python3 -m defineutils.metrics -d tests/define.xml --json
+definemetrics -d tests/define.xml --json
 
 # the counts and totals without the per-dataset table
-python3 -m defineutils.metrics -d tests/define.xml --no-datasets
+definemetrics -d tests/define.xml --no-datasets
 
 # best-effort metrics for a non-conformant define.xml
-python3 -m defineutils.metrics -d broken_define.xml --permissive
+definemetrics -d broken_define.xml --permissive
 ```
 
 The report names the file and the study, then the element counts and the datasets:
@@ -373,15 +405,18 @@ SUMMARY
 `def:AnnotatedCRF 0` above is the point of the model-derived element list: this define.xml has no annotated CRF, and
 the report says so rather than staying silent about it.
 
-metrics sets an exit code: 0 when the report was produced, and 2 when it could not be -- the define.xml is missing or
-would not load, or the report could not be written. 1 means only that an unexpected error occurred, and its traceback
-is printed to stderr. Unlike validate and definerefs, metrics never exits 1 to judge the define.xml, because a metrics
-report describes a define.xml rather than judging it.
+definemetrics sets an exit code: 0 when the report was produced, and 2 when it could not be -- the define.xml is
+missing or would not load, or the report could not be written. 1 means only that an unexpected error occurred, and its
+traceback is printed to stderr. Unlike definevalidate and definerefs, definemetrics never exits 1 to judge the
+define.xml, because a metrics report describes a define.xml rather than judging it.
 
-If you are running defineutils from the source code using a virtual environment, you may need to activate that virtual
-environment before running the code from the command-line.
+If you are running defineutils from the source code, install it into a virtual environment in editable mode to create
+the commands, and activate that environment before running them. Re-run the install after the version or the commands
+change. Without installing, the `python3 -m` form works from the root of the source tree.
 
 ```commandline
+python3 -m venv .venv
 source .venv/bin/activate
-python3 -m defineutils.validate -d tests/define.xml
+pip install -e .
+definevalidate -d tests/define.xml
 ```
