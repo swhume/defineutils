@@ -116,8 +116,8 @@ def test_pretty_print_to_file_errors_graceful(tmp_path: Path):
     define_file = data_path() / "define.xml"
     pp = DefinePrettyPrinter(define_file)
 
-    # writing to a directory path triggers the IsADirectoryError branch
-    with pytest.raises(DefinePrettyPrintError):
+    # named as a folder on every platform, though Windows raises PermissionError rather than IsADirectoryError
+    with pytest.raises(DefinePrettyPrintError, match="write to a directory"):
         pp.pretty_print_to_file(tmp_path)
 
 

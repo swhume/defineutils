@@ -2,12 +2,15 @@
 Builds the defineutils executables for the platform it runs on, and zips them:
 
     python packaging/build_executables.py
+    python packaging/build_executables.py --zip-only
 
 Runs PyInstaller with packaging/defineutils.spec, adds README.txt and a LICENSES folder to the bundle, and writes
-packaging/dist/defineutils-<version>-<platform>.zip (e.g. windows-x64, macos-arm64). Run it with Python 3.12 in an
+packaging/dist/defineutils-<version>-<platform>.zip (e.g. windows-x64, macos-arm64). --zip-only zips the existing
+packaging/dist/defineutils again without rebuilding, which CI does after signing it. Run it with Python 3.12 in an
 environment holding defineutils and packaging/requirements-build.txt. Output stays under packaging/, away from the
 top-level dist/ that holds the PyPI files.
 """
+import argparse
 import os
 import platform
 import shutil
@@ -110,11 +113,20 @@ def write_zip(folder: Path, zip_path: Path) -> None:
 
 
 def main() -> None:
-    PyInstaller.__main__.run(["--noconfirm", "--clean", "--log-level", "WARN", "--distpath", str(DIST),
-                              "--workpath", str(WORK), str(PACKAGING / "defineutils.spec")])
+    parser = argparse.ArgumentParser(description="builds the defineutils executables for this platform and zips them")
+    parser.add_argument("--zip-only", action="store_true",
+                        help="rezip the existing packaging/dist/defineutils (e.g. after signing) without rebuilding")
+    zip_only = parser.parse_args().zip_only
+
     bundle = DIST / "defineutils"
-    shutil.copyfile(PACKAGING / "README.txt", bundle / "README.txt")
-    write_licenses(bundle / "LICENSES")
+    if zip_only:
+        if not bundle.is_dir():
+            raise SystemExit(f"{bundle} does not exist; build it first")
+    else:
+        PyInstaller.__main__.run(["--noconfirm", "--clean", "--log-level", "WARN", "--distpath", str(DIST),
+                                  "--workpath", str(WORK), str(PACKAGING / "defineutils.spec")])
+        shutil.copyfile(PACKAGING / "README.txt", bundle / "README.txt")
+        write_licenses(bundle / "LICENSES")
 
     zip_path = DIST / f"defineutils-{__version__}-{platform_name()}.zip"
     zip_path.unlink(missing_ok=True)

@@ -42,6 +42,11 @@ says so. The report can be printed to the console, written to a text file, or em
 
 ## Installing defineutils
 
+There are three ways to get defineutils:
+- pip, for Python users and for the Python code described in [Using defineutils](#using-defineutils);
+- uv, for the commands only, without installing Python yourself;
+- a download of the commands for Windows or macOS, ready to run, with nothing to install.
+
 defineutils needs Python 3.10 or later. Install it with pip:
 
 ```commandline
@@ -60,6 +65,45 @@ uv tool install defineutils
 
 If the commands are not found afterwards, `uv tool update-shell` adds their folder to your PATH; open a new terminal
 to pick it up. `uv tool upgrade defineutils` installs a newer release later.
+
+### Downloading the commands for Windows or macOS
+
+The five commands are also built as programs that run without Python. Download the zip for your computer from the
+[latest release](https://github.com/swhume/defineutils/releases/latest):
+
+| Computer | Download |
+|---|---|
+| Windows, 64-bit (x64) | `defineutils-<version>-windows-x64.zip` |
+| Mac with Apple silicon (M1 or later) | `defineutils-<version>-macos-arm64.zip` |
+
+On Linux or an Intel Mac, install with uv or pip instead.
+
+The zip holds a defineutils folder with the five commands, the _internal folder they need to run, a README.txt and a
+LICENSES folder. Keep _internal beside the commands. The commands are not code-signed, so Windows and macOS warn about
+them:
+- **Windows**: before unzipping, right-click the downloaded zip, choose Properties, tick Unblock and click OK. If
+  "Windows protected your PC" still appears, choose More info, then Run anyway.
+- **macOS**: after unzipping, remove the download quarantine from the folder once, in Terminal. Type the command below
+  without its path, drag the defineutils folder onto the Terminal window to add the path, and press Return:
+  ```commandline
+  xattr -dr com.apple.quarantine /path/to/defineutils
+  ```
+
+To run a command, open a terminal in the defineutils folder (on Windows, PowerShell or Command Prompt; on macOS,
+Terminal) and type its name with `.\` in front on Windows or `./` on macOS:
+
+```commandline
+# Windows
+.\definehtml -d C:\studies\define.xml
+
+# macOS
+./definehtml -d ~/studies/define.xml
+```
+
+To run the commands from any folder without the `.\` or `./`, add the defineutils folder to your PATH; README.txt in the
+folder explains how. The commands work as described in
+[Running defineutils from the Command-line](#running-defineutils-from-the-command-line). To update, download the zip
+from the newer release and replace the folder. The download holds only the commands; the Python code needs pip.
 
 ## Using defineutils
 
@@ -214,7 +258,7 @@ table, and the `total_variable_refs` property, count only the ItemRefs belonging
 
 ## Running defineutils from the Command-line
 
-Installing defineutils adds a command for each module:
+Installing defineutils, or downloading the commands, gives a command for each module:
 
 | Command | Module | What it does |
 |---|---|---|
@@ -225,8 +269,8 @@ Installing defineutils adds a command for each module:
 | `definemetrics` | `defineutils.metrics` | reports the metrics for a define.xml |
 
 Each command does the same as running its module with Python's -m switch, so `definehtml -d tests/define.xml` and
-`python3 -m defineutils.definehtml -d tests/define.xml` are equivalent. Every command takes --help to list its
-parameters and --version to show the defineutils version.
+`python3 -m defineutils.definehtml -d tests/define.xml` are equivalent; the downloaded commands behave the same, with
+no Python needed. Every command takes --help to list its parameters and --version to show the defineutils version.
 
 The definehtml command transforms a define.xml file into HTML using the stylesheet. It uses the required -d parameter
 to specify the define.xml file path and the optional -o to specify the define.html file path; without -o the HTML is

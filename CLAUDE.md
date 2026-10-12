@@ -45,6 +45,7 @@ DEFINEUTILS_BIN=.venv/bin pytest
 # Python 3.12, with defineutils installed; writes packaging/dist/defineutils-<version>-<platform>.zip
 pip install . -r packaging/requirements-build.txt
 python packaging/build_executables.py
+python packaging/build_executables.py --zip-only   # rezip packaging/dist/defineutils without rebuilding (after signing)
 ```
 
 ### Run a single test
@@ -101,6 +102,10 @@ CLI invariants:
 - CLI tests start processes only through the `run_cli` / `cli_command` fixtures in `tests/conftest.py`, so setting
   `DEFINEUTILS_BIN` re-runs them all against the installed or frozen commands. The one exception is `run_module`,
   the `python -m` reference that `tests/test_commands_match_modules.py` compares the commands with.
+- Writing an output file to a folder must be reported as a folder. Windows raises `PermissionError`, not
+  `IsADirectoryError`, there, so each `*_to_file()` checks `os.path.isdir()` in its `PermissionError` handler. Use
+  `os.path.isdir()`, not `Path.is_dir()`: the latter raises when a parent folder can't be read. definehtml checks
+  before writing instead. `tests/test_write_to_folder.py` simulates the Windows error for the other four modules.
 
 **Executables** (`packaging/`, built by `.github/workflows/executables.yml` on Windows x64 and macOS arm64):
 `packaging/defineutils.spec` builds five one-folder executables from `packaging/entry/<command>.py`, passed to one
@@ -121,8 +126,33 @@ folder per bundled distribution, found from defineutils' requirements, plus Pyth
   PyPI `packaging` library that pytest and PyInstaller import.
 - A `v*` tag build attaches both zips to that tag's GitHub Release, creating a published release if none exists. The
   zip names carry the package version, so the release job fails when the tag doesn't match it.
+- The version is in both `pyproject.toml` and `defineutils/__init__.py`. The zip name uses `__version__`, and
+  `tests/test_entry_points.py` fails in CI when the two differ.
+- README.md's "Downloading the commands" section and `packaging/README.txt` name the zips and give the unblock steps;
+  keep them in step with `platform_name()` and with each other.
+- CI checks out with LF line endings, while a local working copy may have CRLF (`tests/define.xml` does), so tests
+  must not pin a test file's byte size.
 - Windows can't deliver SIGINT to a child process, so the subprocess Ctrl-C test is skipped there;
   `tests/test_entry_points.py` covers `run()`'s Ctrl-C handling on every platform.
+
+**Windows signing** (setup and behaviour in `packaging/SIGNING.md`; macOS signing is deferred):
+- **What runs it:** the `sign-windows` job signs with Azure Artifact Signing on a `v*` tag, or on a manual run with
+  `sign`, once the `ARTIFACT_SIGNING_ACCOUNT` repository variable is set. That condition appears twice: in the
+  workflow's `env.SIGN_WINDOWS` and in the job's `if`, which can't read env. Change both together.
+- **Azure login:** the job uses OIDC through the `signing` GitHub environment. Entra federated credentials can't
+  match a tag pattern, so the environment is what lets every tag sign; keep the job's `environment: signing`.
+- **What is signed:** only files without a signature, listed by `packaging/windows_signing.ps1 -Action List`. Never
+  sign the whole folder: it would replace the PSF's and Microsoft's signatures on Python and the runtime.
+- **Timestamps:** every signature needs one, because Artifact Signing certificates last three days. `-Action Check`
+  fails on any signature without one.
+- **Artifact names:** on a signing run, the build job uploads the Windows zip as `windows-unsigned`. The sign job
+  rezips it with `build_executables.py --zip-only`, so the only artifact named `defineutils-*-windows-x64.zip` is the
+  signed one, which the release job's `defineutils-*` pattern picks up.
+- **The throwaway-certificate check:** every Windows build signs a copy with a throwaway self-signed certificate
+  (`-Action TrySelfSigned`) and runs the commands from it.
+- **PowerShell version:** `windows_signing.ps1` runs under Windows PowerShell 5.1 (`shell: powershell`), where
+  `New-SelfSignedCertificate` and the Authenticode cmdlets are built in. Keep it free of PowerShell 7-only syntax and
+  of .NET Core-only APIs.
 
 **definehtml module**: Uses lxml for XSLT transformation. `DefineHtml` compiles the bundled `define2-1.xsl` (the
 module-level `STYLESHEET`) once in `__init__` and renders via `transform_to_html_string()`, which returns `str`, or

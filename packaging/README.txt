@@ -40,6 +40,7 @@ These builds are not code-signed, so Windows and macOS warn about them.
             If "Windows protected your PC" appears, choose "More info" > "Run anyway".
   macOS:    remove the download quarantine once, in Terminal:
               xattr -dr com.apple.quarantine /path/to/defineutils
+            (type it without the path, then drag this folder onto the Terminal window to add the path)
 
 
 Licenses

@@ -302,8 +302,8 @@ def test_check_to_console(capsys):
 def test_check_to_file_errors_graceful(tmp_path: Path):
     checker = DefineRefChecker(define_file())
 
-    # writing to a directory path triggers the IsADirectoryError branch
-    with pytest.raises(DefineRefCheckError):
+    # named as a folder on every platform, though Windows raises PermissionError rather than IsADirectoryError
+    with pytest.raises(DefineRefCheckError, match="write to a directory"):
         checker.check_to_file(tmp_path)
 
 

@@ -355,8 +355,8 @@ def test_validate_to_file_json(tmp_path: Path, broken_define: Path):
 def test_validate_to_file_errors_graceful(tmp_path: Path):
     validator = DefineSchemaValidator(define_file())
 
-    # writing to a directory path triggers the IsADirectoryError branch
-    with pytest.raises(DefineSchemaValidationError):
+    # named as a folder on every platform, though Windows raises PermissionError rather than IsADirectoryError
+    with pytest.raises(DefineSchemaValidationError, match="write to a directory"):
         validator.validate_to_file(tmp_path)
 
 

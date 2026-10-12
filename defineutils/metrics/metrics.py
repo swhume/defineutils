@@ -10,6 +10,7 @@ MethodDef descriptors from ODM 1.3.2, so following descriptor.element_class woul
 ODM shape rather than the Define-XML one.
 """
 import importlib
+import os
 from collections import Counter, deque
 from contextlib import nullcontext
 from dataclasses import dataclass, field
@@ -188,6 +189,10 @@ class DefineMetrics:
         except FileNotFoundError as e:
             raise DefineMetricsError(f"File {out_file} not found.\n{e}")
         except PermissionError as e:
+            # Windows raises PermissionError, not IsADirectoryError, for a folder; os.path.isdir never raises,
+            # where Path.is_dir() can when a parent folder is unreadable
+            if os.path.isdir(out_file):
+                raise DefineMetricsError(f"Error attempting to write to a directory {out_file}.")
             raise DefineMetricsError(f"Permission error attempting to write to {out_file}.\n{e}")
         except IsADirectoryError as e:
             raise DefineMetricsError(f"Error attempting to write to a directory {out_file}.\n{e}")

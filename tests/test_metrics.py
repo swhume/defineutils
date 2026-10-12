@@ -163,8 +163,8 @@ def test_item_def_keeps_its_define_xml_shape(result):
 # 4. file and study identity
 
 def test_file_metrics(result):
+    # no pinned byte count: the size depends on the checkout's line endings
     assert result.size_bytes == define_file().stat().st_size
-    assert result.size_bytes == 174322
     assert result.file_modified  # ISO 8601 from the file system, not from the document
     assert result.define_file == str(define_file())
 
@@ -367,7 +367,8 @@ def test_permissive_collects_metrics_from_a_non_conformant_file(non_conformant_d
 
 
 def test_unwritable_out_file_raises(tmp_path: Path):
-    with pytest.raises(DefineMetricsError, match="directory"):
+    # named as a folder on every platform, though Windows raises PermissionError rather than IsADirectoryError
+    with pytest.raises(DefineMetricsError, match="write to a directory"):
         DefineMetrics(define_file()).collect_to_file(tmp_path)
 
 
