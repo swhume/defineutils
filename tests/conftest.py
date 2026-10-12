@@ -51,6 +51,20 @@ def run_cli(cli_command):
 
 
 @pytest.fixture
+def run_module():
+    """
+    returns run(name, *args): runs the named command's module with python -m from the repo root, in UTF-8 mode as
+    the frozen build runs. It is the reference the DEFINEUTILS_BIN commands are compared with, so it ignores
+    DEFINEUTILS_BIN; every other CLI test uses run_cli
+    """
+    def run(name: str, *args: str) -> subprocess.CompletedProcess:
+        return subprocess.run([sys.executable, "-X", "utf8", "-m", COMMANDS[name], *args], capture_output=True,
+                              cwd=str(DATA.parent))
+
+    return run
+
+
+@pytest.fixture
 def edited_define(tmp_path):
     """
     returns make(edit, source): writes a copy of a test define.xml to tmp_path after edit(tree)

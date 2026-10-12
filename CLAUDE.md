@@ -35,8 +35,16 @@ pip install -e .   # also creates the five commands; re-run after the version or
 ### Run tests
 ```bash
 pytest
-# run the CLI tests against a folder of commands (installed console scripts, or later a frozen build)
+# run the CLI tests against a folder of commands (installed console scripts, or an unzipped frozen build); this also
+# runs tests/test_commands_match_modules.py, which compares each command's output with python -m
 DEFINEUTILS_BIN=.venv/bin pytest
+```
+
+### Build the executables
+```bash
+# Python 3.12, with defineutils installed; writes packaging/dist/defineutils-<version>-<platform>.zip
+pip install . -r packaging/requirements-build.txt
+python packaging/build_executables.py
 ```
 
 ### Run a single test
@@ -91,7 +99,30 @@ CLI invariants:
 - Messages that tell the user to run another tool name the command (`definevalidate -d <file>`), never
   `python -m ...`, which does not exist for users of a frozen build.
 - CLI tests start processes only through the `run_cli` / `cli_command` fixtures in `tests/conftest.py`, so setting
-  `DEFINEUTILS_BIN` re-runs them all against the installed or frozen commands.
+  `DEFINEUTILS_BIN` re-runs them all against the installed or frozen commands. The one exception is `run_module`,
+  the `python -m` reference that `tests/test_commands_match_modules.py` compares the commands with.
+
+**Executables** (`packaging/`, built by `.github/workflows/executables.yml` on Windows x64 and macOS arm64):
+`packaging/defineutils.spec` builds five one-folder executables from `packaging/entry/<command>.py`, passed to one
+shared `COLLECT` so they share one `_internal` folder; `build_executables.py` adds `README.txt` and `LICENSES/` (one
+folder per bundled distribution, found from defineutils' requirements, plus Python and PyInstaller) and zips it.
+- A new command needs an entry script and a `COMMANDS` entry in the spec, as well as `[project.scripts]` and the
+  `COMMANDS` dict in `tests/conftest.py`.
+- A new data file or computed import, in defineutils or a dependency, must be collected in the spec, or the frozen
+  build fails only when that code runs. CI's run of the tests against the unzipped executables is what catches it.
+- Spec choices that were measured; don't revert them:
+  - `noarchive=True`: an archive would put a ~4.5 MB copy of the Python code in each executable.
+  - No `collect_all("xmlschema")`: the contrib hook is enough, and `collect_all` bundles xmlschema's test framework.
+  - `excludes` setuptools: PyInstaller requires it, cerberus pulls it in, and its runtime hook slows start-up.
+  - `X utf8`: the executables run in UTF-8 mode, so output redirected on Windows is UTF-8. That is why `run_module`
+    also uses `-X utf8`; pip-installed commands on Windows don't, so they may not match it there.
+- Build output goes to `packaging/build/` and `packaging/dist/`, never the top-level `dist/` holding the PyPI files.
+- Never add `__init__.py` to `packaging/`: with the repo root on `sys.path` (`python -m pytest`), it would shadow the
+  PyPI `packaging` library that pytest and PyInstaller import.
+- A `v*` tag build attaches both zips to that tag's GitHub Release, creating a published release if none exists. The
+  zip names carry the package version, so the release job fails when the tag doesn't match it.
+- Windows can't deliver SIGINT to a child process, so the subprocess Ctrl-C test is skipped there;
+  `tests/test_entry_points.py` covers `run()`'s Ctrl-C handling on every platform.
 
 **definehtml module**: Uses lxml for XSLT transformation. `DefineHtml` compiles the bundled `define2-1.xsl` (the
 module-level `STYLESHEET`) once in `__init__` and renders via `transform_to_html_string()`, which returns `str`, or

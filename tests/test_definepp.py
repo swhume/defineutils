@@ -1,5 +1,6 @@
 import signal
 import subprocess
+import sys
 import time
 from pathlib import Path
 import pytest
@@ -140,6 +141,8 @@ def test_console_broken_pipe_exits_cleanly(cli_command):
     assert b"BrokenPipeError" not in err
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="Windows cannot send SIGINT to a child process; "
+                    "test_entry_points covers run()'s Ctrl-C handling on every platform")
 def test_console_ctrl_c_exits_cleanly(cli_command):
     # Ctrl-C while paging sends SIGINT to the writer, which raises KeyboardInterrupt
     # mid-write; the CLI should exit 130 quietly with no traceback. The read end stays open
