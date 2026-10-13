@@ -1,3 +1,3 @@
-from .definehtml import DefineHtml, DefineHtmlGenerationError
+from .definehtml import DefineHtml, DefineHtmlGenerationError, DefineHtmlWriteError
 
-__all__ = ["DefineHtml", "DefineHtmlGenerationError"]
+__all__ = ["DefineHtml", "DefineHtmlGenerationError", "DefineHtmlWriteError"]

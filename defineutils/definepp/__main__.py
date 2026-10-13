@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 import argparse
+from defineutils import __version__
 from defineutils.definepp import DefinePrettyPrinter, DefinePrettyPrintError
 
 def main():
@@ -37,7 +38,8 @@ def set_cmd_line_args():
     get the command-line arguments needed to pretty-print the define.xml input file
     :return: return the argparse object with the command-line parameters
     """
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(prog="definepp")
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     parser.add_argument("-d", "--define", help="path and file name of the define.xml file to pretty-print",
                         required=True, dest="define")
     parser.add_argument("-o", "--out", help="path and file name of the formatted define.xml to create; "
@@ -47,7 +49,9 @@ def set_cmd_line_args():
     args = parser.parse_args()
     return args
 
-if __name__ == "__main__":
+def run():
+    """the entry point for both the definepp command and python -m. The command calls run()
+    directly, never this module's __main__ block, so the outer safety net lives here"""
     # Outer safety net: catch a Ctrl-C / broken pipe raised while main()'s own handlers
     # are running or in the small window outside its try (observed on Windows).
     try:
@@ -56,3 +60,6 @@ if __name__ == "__main__":
         _quiet_exit(130)
     except BrokenPipeError:
         _quiet_exit(0)
+
+if __name__ == "__main__":
+    run()

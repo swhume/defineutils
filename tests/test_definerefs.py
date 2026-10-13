@@ -1,6 +1,4 @@
 import json
-import subprocess
-import sys
 from copy import deepcopy
 from pathlib import Path
 
@@ -304,8 +302,8 @@ def test_check_to_console(capsys):
 def test_check_to_file_errors_graceful(tmp_path: Path):
     checker = DefineRefChecker(define_file())
 
-    # writing to a directory path triggers the IsADirectoryError branch
-    with pytest.raises(DefineRefCheckError):
+    # named as a folder on every platform, though Windows raises PermissionError rather than IsADirectoryError
+    with pytest.raises(DefineRefCheckError, match="write to a directory"):
         checker.check_to_file(tmp_path)
 
 
@@ -322,7 +320,7 @@ def test_malformed_xml_raises_with_validate_guidance(tmp_path: Path):
         DefineRefChecker(bad_xml).check()
 
     message = str(excinfo.value)
-    assert "python -m defineutils.validate" in message
+    assert "definevalidate -d" in message
     # the underlying parser message survives, whatever exception type odmlib wraps it in
     assert "mismatched tag" in message
     # permissive mode cannot rescue malformed XML, so it is not suggested
@@ -334,7 +332,7 @@ def test_nonconformant_raises_without_permissive(nonconformant_define: Path):
         DefineRefChecker(nonconformant_define).check()
 
     message = str(excinfo.value)
-    assert "python -m defineutils.validate" in message
+    assert "definevalidate -d" in message
     assert "--permissive" in message
 
 
@@ -349,44 +347,37 @@ def test_nonconformant_checks_with_permissive(nonconformant_define: Path):
     assert json.loads(checker.check_to_json())["permissive"] is True
 
 
-def _run_cli(*cli_args) -> subprocess.CompletedProcess:
-    """Run `python -m defineutils.definerefs` from the repo root so the package resolves
-    whether or not it is installed."""
-    return subprocess.run([sys.executable, "-m", "defineutils.definerefs", *cli_args],
-                          capture_output=True, cwd=str(data_path().parent))
-
-
-def test_cli_exit_code_clean():
-    completed = _run_cli("-d", str(define_file()))
+def test_cli_exit_code_clean(run_cli):
+    completed = run_cli("definerefs", "-d", str(define_file()))
 
     assert completed.returncode == 0
     assert b"Define-XML OID reference/definition check" in completed.stdout
     assert b"Traceback" not in completed.stderr
 
 
-def test_cli_exit_code_errors(broken_define: Path):
-    completed = _run_cli("-d", str(broken_define))
+def test_cli_exit_code_errors(broken_define: Path, run_cli):
+    completed = run_cli("definerefs", "-d", str(broken_define))
 
     assert completed.returncode == 1
     assert b"ERRORS (" in completed.stdout
     assert b"Traceback" not in completed.stderr
 
 
-def test_cli_exit_code_load_failure(tmp_path: Path):
+def test_cli_exit_code_load_failure(tmp_path: Path, run_cli):
     bad_xml = tmp_path / "bad.xml"
     bad_xml.write_text("<ODM><broken></ODM>", encoding="utf-8")
 
-    completed = _run_cli("-d", str(bad_xml))
+    completed = run_cli("definerefs", "-d", str(bad_xml))
 
     assert completed.returncode == 2
-    assert b"python -m defineutils.validate" in completed.stderr
+    assert b"definevalidate -d" in completed.stderr
     assert b"Traceback" not in completed.stderr
 
 
-def test_cli_json_to_file(tmp_path: Path, broken_define: Path):
+def test_cli_json_to_file(tmp_path: Path, broken_define: Path, run_cli):
     out_file = tmp_path / "report.json"
 
-    completed = _run_cli("-d", str(broken_define), "-o", str(out_file), "--json")
+    completed = run_cli("definerefs", "-d", str(broken_define), "-o", str(out_file), "--json")
 
     assert completed.returncode == 1
     assert json.loads(out_file.read_text(encoding="utf-8"))["counts"]["errors"] > 0

@@ -10,6 +10,7 @@ MethodDef descriptors from ODM 1.3.2, so following descriptor.element_class woul
 ODM shape rather than the Define-XML one.
 """
 import importlib
+import os
 from collections import Counter, deque
 from contextlib import nullcontext
 from dataclasses import dataclass, field
@@ -188,6 +189,10 @@ class DefineMetrics:
         except FileNotFoundError as e:
             raise DefineMetricsError(f"File {out_file} not found.\n{e}")
         except PermissionError as e:
+            # Windows raises PermissionError, not IsADirectoryError, for a folder; os.path.isdir never raises,
+            # where Path.is_dir() can when a parent folder is unreadable
+            if os.path.isdir(out_file):
+                raise DefineMetricsError(f"Error attempting to write to a directory {out_file}.")
             raise DefineMetricsError(f"Permission error attempting to write to {out_file}.\n{e}")
         except IsADirectoryError as e:
             raise DefineMetricsError(f"Error attempting to write to a directory {out_file}.\n{e}")
@@ -451,7 +456,7 @@ class DefineMetrics:
                    f"No metrics were collected. This file must parse as conformant\n"
                    f"{model} before its metrics can be collected. Run the validate\n"
                    f"utility to identify the problems:\n\n"
-                   f"    python -m defineutils.validate -d {self.define}\n\n"
+                   f"    definevalidate -d {self.define}\n\n"
                    f"Then re-run these metrics.")
         if not self.permissive and self._permissive_would_load():
             message += (" To collect best-effort metrics from the file as-is,\n"

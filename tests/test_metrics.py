@@ -1,6 +1,5 @@
 import inspect
 import json
-import subprocess
 import sys
 from collections import Counter
 from pathlib import Path
@@ -164,8 +163,8 @@ def test_item_def_keeps_its_define_xml_shape(result):
 # 4. file and study identity
 
 def test_file_metrics(result):
+    # no pinned byte count: the size depends on the checkout's line endings
     assert result.size_bytes == define_file().stat().st_size
-    assert result.size_bytes == 174322
     assert result.file_modified  # ISO 8601 from the file system, not from the document
     assert result.define_file == str(define_file())
 
@@ -349,7 +348,7 @@ def test_malformed_file_recommends_the_validate_utility(tmp_path: Path):
     bad_xml = tmp_path / "bad.xml"
     bad_xml.write_text("<ODM><broken></ODM>", encoding="utf-8")
 
-    with pytest.raises(DefineMetricsError, match="python -m defineutils.validate"):
+    with pytest.raises(DefineMetricsError, match="definevalidate -d"):
         DefineMetrics(bad_xml).collect()
 
 
@@ -368,72 +367,95 @@ def test_permissive_collects_metrics_from_a_non_conformant_file(non_conformant_d
 
 
 def test_unwritable_out_file_raises(tmp_path: Path):
-    with pytest.raises(DefineMetricsError, match="directory"):
+    # named as a folder on every platform, though Windows raises PermissionError rather than IsADirectoryError
+    with pytest.raises(DefineMetricsError, match="write to a directory"):
         DefineMetrics(define_file()).collect_to_file(tmp_path)
 
 
 # the CLI
 
-def _run_cli(*cli_args) -> subprocess.CompletedProcess:
-    """Run `python -m defineutils.metrics` from the repo root so the package resolves
-    whether or not it is installed."""
-    return subprocess.run([sys.executable, "-m", "defineutils.metrics", *cli_args],
-                          capture_output=True, cwd=str(data_path().parent))
-
-
-def test_cli_exit_code_success():
-    completed = _run_cli("-d", str(define_file()))
+def test_cli_exit_code_success(run_cli):
+    completed = run_cli("definemetrics", "-d", str(define_file()))
 
     assert completed.returncode == 0
     assert b"Define-XML metrics" in completed.stdout
     assert b"Traceback" not in completed.stderr
 
 
-def test_cli_exit_code_missing_file():
-    completed = _run_cli("-d", "does_not_exist.xml")
+def test_cli_exit_code_missing_file(run_cli):
+    completed = run_cli("definemetrics", "-d", "does_not_exist.xml")
 
     assert completed.returncode == 2
     assert b"not found" in completed.stderr
     assert completed.stdout == b""
 
 
-def test_cli_exit_code_load_failure(tmp_path: Path):
+def test_cli_exit_code_load_failure(tmp_path: Path, run_cli):
     bad_xml = tmp_path / "bad.xml"
     bad_xml.write_text("<ODM><broken></ODM>", encoding="utf-8")
 
-    completed = _run_cli("-d", str(bad_xml))
+    completed = run_cli("definemetrics", "-d", str(bad_xml))
 
     assert completed.returncode == 2
-    assert b"python -m defineutils.validate" in completed.stderr
+    assert b"definevalidate -d" in completed.stderr
     assert b"Traceback" not in completed.stderr
 
 
-def test_cli_exit_code_unwritable_out(tmp_path: Path):
-    completed = _run_cli("-d", str(define_file()), "-o", str(tmp_path))
+def test_cli_exit_code_unwritable_out(tmp_path: Path, run_cli):
+    completed = run_cli("definemetrics", "-d", str(define_file()), "-o", str(tmp_path))
 
     assert completed.returncode == 2
     assert b"Traceback" not in completed.stderr
 
 
-def test_cli_json_to_file(tmp_path: Path):
+def test_cli_json_to_file(tmp_path: Path, run_cli):
     out_file = tmp_path / "metrics.json"
 
-    completed = _run_cli("-d", str(define_file()), "-o", str(out_file), "--json")
+    completed = run_cli("definemetrics", "-d", str(define_file()), "-o", str(out_file), "--json")
 
     assert completed.returncode == 0
     assert json.loads(out_file.read_text(encoding="utf-8"))["totals"]["datasets"] == 11
 
 
-def test_cli_no_datasets():
-    completed = _run_cli("-d", str(define_file()), "--no-datasets")
+def test_cli_no_datasets(run_cli):
+    completed = run_cli("definemetrics", "-d", str(define_file()), "--no-datasets")
 
     assert completed.returncode == 0
     assert b"DATASETS" not in completed.stdout
     assert b"ELEMENT COUNTS" in completed.stdout
 
 
-def test_cli_permissive(non_conformant_define: Path):
-    completed = _run_cli("-d", str(non_conformant_define), "--permissive")
+def test_cli_permissive(non_conformant_define: Path, run_cli):
+    completed = run_cli("definemetrics", "-d", str(non_conformant_define), "--permissive")
 
     assert completed.returncode == 0
     assert b"NOTE: loaded in permissive mode" in completed.stdout
+
+
+def test_cli_unexpected_error_returns_1_with_a_traceback(monkeypatch, capsys):
+    from defineutils.metrics import __main__ as metrics_cli
+
+    def crash(self):
+        raise RuntimeError("simulated defect")
+
+    monkeypatch.setattr(DefineMetrics, "collect", crash)
+    monkeypatch.setattr(sys, "argv", ["metrics", "-d", str(define_file())])
+
+    assert metrics_cli.main() == 1
+    stderr = capsys.readouterr().err
+    assert "Traceback" in stderr
+    assert "RuntimeError: simulated defect" in stderr
+
+
+def test_cli_broken_pipe_is_left_to_the_entry_point(monkeypatch):
+    # quitting a pager exits 0 at the entry point; main() must not report it as a crash
+    from defineutils.metrics import __main__ as metrics_cli
+
+    def closed_pipe(self):
+        raise BrokenPipeError()
+
+    monkeypatch.setattr(DefineMetrics, "collect", closed_pipe)
+    monkeypatch.setattr(sys, "argv", ["metrics", "-d", str(define_file())])
+
+    with pytest.raises(BrokenPipeError):
+        metrics_cli.main()

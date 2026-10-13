@@ -1,0 +1,4 @@
+# What packaging/build_executables.py needs besides defineutils itself, pinned to the versions the spec was verified
+# with. Builds use Python 3.12. PyInstaller also brings in packaging, which the build script imports.
+pyinstaller==6.22.3
+pyinstaller-hooks-contrib==2026.8

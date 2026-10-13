@@ -1,3 +1,4 @@
+import os
 import sys
 from lxml import etree
 from pathlib import Path
@@ -31,6 +32,10 @@ class DefinePrettyPrinter:
         except FileNotFoundError as e:
             raise DefinePrettyPrintError(f"File {out_file} not found.\n{e}")
         except PermissionError as e:
+            # Windows raises PermissionError, not IsADirectoryError, for a folder; os.path.isdir never raises,
+            # where Path.is_dir() can when a parent folder is unreadable
+            if os.path.isdir(out_file):
+                raise DefinePrettyPrintError(f"Error attempting to write to a directory {out_file}.")
             raise DefinePrettyPrintError(f"Permission error attempting to write to {out_file}.\n{e}")
         except IsADirectoryError as e:
             raise DefinePrettyPrintError(f"Error attempting to write to a directory {out_file}.\n{e}")

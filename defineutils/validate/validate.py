@@ -1,3 +1,4 @@
+import os
 import xmlschema as XSD
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -145,6 +146,10 @@ class DefineSchemaValidator():
         except FileNotFoundError as e:
             raise DefineSchemaLoadError(f"File {out_file} not found.\n{e}")
         except PermissionError as e:
+            # Windows raises PermissionError, not IsADirectoryError, for a folder; os.path.isdir never raises,
+            # where Path.is_dir() can when a parent folder is unreadable
+            if os.path.isdir(out_file):
+                raise DefineSchemaLoadError(f"Error attempting to write to a directory {out_file}.")
             raise DefineSchemaLoadError(f"Permission error attempting to write to {out_file}.\n{e}")
         except IsADirectoryError as e:
             raise DefineSchemaLoadError(f"Error attempting to write to a directory {out_file}.\n{e}")

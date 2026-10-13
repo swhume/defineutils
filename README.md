@@ -2,15 +2,21 @@
 
 ## CDISC Define-XML v2.1 utilities
 
-The defineutils package currently includes 5 modules:
+The defineutils package currently includes 6 modules:
 1. `definehtml.py`: transforms a define.xml into a define.html using the stylesheet
 2. `validate.py`: schema validates a define.xml file
 3. `definepp.py`: pretty-prints (re-indents) a define.xml file
 4. `definerefs.py`: checks the OID reference/definition integrity of a define.xml file
 5. `metrics.py`: reports metrics for a define.xml file
+6. `defineview.py`: renders a define.xml with definehtml and opens it in the default browser
 
 The `definehtml.py` module includes the Define-XML v2.1 style sheet to simplify usage. It generates a define.html file,
-or alternatively will generate an HTML string.
+or alternatively returns the HTML as a string. It renders Define-XML v2.1 only: a file in another Define-XML version,
+or one that is not well-formed, is refused with an error that recommends running definevalidate, rather than rendered
+with content silently missing. Links in the define.xml that use a scheme other than http, https or file (such as
+`javascript:`) are shown as text rather than as links. The stylesheet's display options are available as arguments:
+the Comments table, the Methods table, `[Comment]`/`[Method]`/`[Origin]` prefixes, the Length / Significant Digits /
+Display Format column, and how many codelist terms are listed in the Controlled Terms column.
 
 The `validate.py` module includes the Define-XML v2.1 schema to simplify usage. It schema validates a define.xml file
 and reports every schema validation error it finds, not just the first one. Errors that say the same thing about the
@@ -35,10 +41,115 @@ variables in each. The element list is derived from the Define-XML v2.1 model ra
 element the file does not use is reported as 0 instead of being left out -- a define.xml with no `MethodDef` at all
 says so. The report can be printed to the console, written to a text file, or emitted as JSON.
 
+The `defineview.py` module shows a define.xml in the browser: it writes the HTML beside the define.xml and opens it in
+the default browser, or opens a page saying why the file could not be shown. On Windows, choosing defineview once to
+open define.xml files lets a double-click on a define.xml show it in the browser; see
+[Opening a define.xml with a double-click](#opening-a-definexml-with-a-double-click-windows).
+
+## Installing defineutils
+
+There are three ways to get defineutils:
+- pip, for Python users and for the Python code described in [Using defineutils](#using-defineutils);
+- uv, for the commands only, without installing Python yourself;
+- a download of the commands for Windows or macOS, ready to run, with nothing to install.
+
+defineutils needs Python 3.10 or later. Install it with pip:
+
+```commandline
+pip install defineutils
+```
+
+Installing adds six commands -- definehtml, definevalidate, definepp, definerefs, definemetrics and defineview --
+described in
+[Running defineutils from the Command-line](#running-defineutils-from-the-command-line).
+
+If you only need the commands and do not have Python, [uv](https://docs.astral.sh/uv/getting-started/installation/)
+installs them in one step, downloading a suitable Python for them if none is found. Install uv, then run:
+
+```commandline
+uv tool install defineutils
+```
+
+If the commands are not found afterwards, `uv tool update-shell` adds their folder to your PATH; open a new terminal
+to pick it up. `uv tool upgrade defineutils` installs a newer release later.
+
+### Downloading the commands for Windows or macOS
+
+The six commands are also built as programs that run without Python. Download the zip for your computer from the
+[latest release](https://github.com/swhume/defineutils/releases/latest):
+
+| Computer | Download |
+|---|---|
+| Windows, 64-bit (x64) | `defineutils-<version>-windows-x64.zip` |
+| Mac with Apple silicon (M1 or later) | `defineutils-<version>-macos-arm64.zip` |
+
+On Linux or an Intel Mac, install with uv or pip instead.
+
+The zip holds a defineutils folder with the six commands, the _internal folder they need to run, a README.txt and a
+LICENSES folder. Keep _internal beside the commands. The commands are not code-signed, so Windows and macOS warn about
+them:
+- **Windows**: before unzipping, right-click the downloaded zip, choose Properties, tick Unblock and click OK. If
+  "Windows protected your PC" still appears, choose More info, then Run anyway.
+- **macOS**: after unzipping, remove the download quarantine from the folder once, in Terminal. Type the command below
+  without its path, drag the defineutils folder onto the Terminal window to add the path, and press Return:
+  ```commandline
+  xattr -dr com.apple.quarantine /path/to/defineutils
+  ```
+
+To run a command, open a terminal in the defineutils folder (on Windows, PowerShell or Command Prompt; on macOS,
+Terminal) and type its name with `.\` in front on Windows or `./` on macOS:
+
+```commandline
+# Windows
+.\definehtml -d C:\studies\define.xml
+
+# macOS
+./definehtml -d ~/studies/define.xml
+```
+
+To run the commands from any folder without the `.\` or `./`, add the defineutils folder to your PATH; README.txt in the
+folder explains how. The commands work as described in
+[Running defineutils from the Command-line](#running-defineutils-from-the-command-line). To update, download the zip
+from the newer release and replace the folder. The download holds only the commands; the Python code needs pip.
+
+### Opening a define.xml with a double-click (Windows)
+
+defineview renders a define.xml and opens it in your default browser. Choose it once to open define.xml files, and a
+double-click on a define.xml shows it in the browser, with no terminal and no console window:
+
+1. Keep the defineutils folder where it will stay, for example `%LOCALAPPDATA%\Programs\defineutils`, unblocking the
+   zip first as above. Windows remembers where defineview.exe is, so to update, replace the folder's contents rather
+   than unzipping the new release somewhere else.
+2. Right-click a define.xml, choose Open with, then Choose another app. Choose "Choose an app on your PC" (on Windows
+   10, More apps, then "Look for another app on this PC") and select defineview.exe in the defineutils folder.
+3. Windows asks whether to use defineview just once or always (on Windows 10, with the "Always use this app to open
+   .xml files" box):
+   - **Just once** leaves .xml files opening as they do now, and keeps defineview in the Open with menu for next time.
+   - **Always** makes a double-click open every .xml file with defineview. An XML file that is not a Define-XML v2.1
+     file gets a page saying so, with a link that shows it as plain XML in the browser.
+
+defineview writes the HTML beside the define.xml, as define.html for define.xml, replacing any file of that name, so
+the page's links to the datasets and documents in that folder work. When it can't write there, such as on a read-only
+share, it writes the HTML to your temp folder instead, with links that still point to the define.xml's folder. When a
+define.xml can't be shown, because it is not well-formed or not Define-XML v2.1, a page in the browser says why.
+
+To use the temp folder every time, so that nothing is written beside the define.xml:
+- make a shortcut to defineview.exe, add ` --temp` to the end of the Target in the shortcut's Properties, and drop
+  define.xml files onto the shortcut;
+- to have it in the right-click Send to menu as well, move the shortcut to the Send to folder: type `shell:sendto` in
+  File Explorer's address bar to open it.
+
+To stop .xml files opening with defineview, open Settings > Apps > Default apps, find .xml, and choose another app.
+
+If you installed defineutils with pip or uv rather than downloading it, choose the defineview.exe they installed
+in step 2; in PowerShell, `(Get-Command defineview).Source` shows where it is. On a Mac, run defineview in Terminal for
+now (`./defineview ~/studies/define.xml`); opening a define.xml with a double-click is not available there yet.
+
 ## Using defineutils
 
-Currently, defineutils contains 5 modules: one for generating an HTML rendition, one for schema validation, one
-for pretty-printing, one for OID reference/definition checking, and one for reporting metrics.
+Currently, defineutils contains 6 modules: one for generating an HTML rendition, one for schema validation, one
+for pretty-printing, one for OID reference/definition checking, one for reporting metrics, and one that opens a
+define.xml in the browser.
 
 Example code used to generate a define.html from a define.xml:
 ```python
@@ -46,12 +157,24 @@ from pathlib import Path
 from defineutils.definehtml import DefineHtml, DefineHtmlGenerationError
 
 out_file = Path(__file__).parent.joinpath("define.html")
-dh = DefineHtml(Path(__file__).parent.joinpath("define.xml"))
-dh.transform_to_html_file(out_file)
+try:
+    dh = DefineHtml(Path(__file__).parent.joinpath("define.xml"))
+    dh.transform_to_html_file(out_file)
+except DefineHtmlGenerationError as e:
+    print(e)
+
+# or get the HTML as a string, here with the Comments table added
+html = DefineHtml(Path(__file__).parent.joinpath("define.xml"), comments_table=True).transform_to_html_string()
 ```
 
-The above code applies the Define-XML v2.1 stylesheet to the define.xml to generation the define.html file. The 
-stylesheet is embedded in the module. For error handling, use the custom DefineHtmlGenerationError exception.
+The above code applies the Define-XML v2.1 stylesheet to the define.xml to generate the define.html file. The
+stylesheet is embedded in the module. Every failure raises the custom DefineHtmlGenerationError exception: a missing,
+unreadable or malformed define.xml, a file that is not Define-XML v2.1, a stylesheet error, or an output file that
+cannot be written or that is the input define.xml itself; the last two raise its subclass DefineHtmlWriteError.
+`transform_to_html_string()` returns a `str`. The display options are keyword arguments to `DefineHtml`:
+`codelist_items` (default 5), `methods_table` (default True), `comments_table`, `prefixes` and `length_format` (default
+False). For HTML saved in a different folder from the define.xml, `absolute_links=True` rewrites the links to datasets
+and documents as `file:` URLs pointing to the define.xml's folder, so they still work.
 
 Example code used to schema validate a define.xml:
 ```python
@@ -141,7 +264,7 @@ the check, the OID, the reference attribute, the expected and actual element typ
 occurs at. Use `check_to_string()` for the formatted listing, `check_to_file()` to write it to a file,
 `check_to_console()` to print it, and `check_to_json()` for machine-readable results. A define.xml that will not load
 into the Define-XML v2.1 model cannot be checked at all, so that failure is reported via the DefineRefCheckError
-exception with a recommendation to run the validate module first. Pass `permissive=True` to attempt a best-effort
+exception with a recommendation to run definevalidate first. Pass `permissive=True` to attempt a best-effort
 check of a non-conformant file anyway.
 
 Example code used to report the metrics for a define.xml:
@@ -169,7 +292,7 @@ the report methods do not re-parse the file. Use `collect_to_string()` for the f
 `collect_to_file()` to write it to a file, `collect_to_console()` to print it, and `collect_to_json()` for
 machine-readable results; pass `show_datasets=False` to leave the per-dataset table out of the text report. A
 define.xml that will not load into the Define-XML v2.1 model is reported via the DefineMetricsError exception with a
-recommendation to run the validate module first; pass `permissive=True` to collect best-effort metrics from a
+recommendation to run definevalidate first; pass `permissive=True` to collect best-effort metrics from a
 non-conformant file anyway.
 
 Note that the element counts are per element type across the whole document, so the ItemRef count includes both the
@@ -178,36 +301,71 @@ table, and the `total_variable_refs` property, count only the ItemRefs belonging
 
 ## Running defineutils from the Command-line
 
-When you run a module with the -m switch it will execute the defineutils modules from the command-line. For example,
-to transform a define.xml file into HTML using the stylesheet, the following command-line example executes the module
-to generate define.html. The -m parameter instructs Python to run the module as an application. The definehtml program
-uses the -d parameter to specify the define.xml file path and the -o to specify the define.html file path.
+Installing defineutils, or downloading the commands, gives a command for each module:
+
+| Command | Module | What it does |
+|---|---|---|
+| `definehtml` | `defineutils.definehtml` | transforms a define.xml into a define.html |
+| `definevalidate` | `defineutils.validate` | schema validates a define.xml |
+| `definepp` | `defineutils.definepp` | pretty-prints a define.xml |
+| `definerefs` | `defineutils.definerefs` | checks the OID references and definitions in a define.xml |
+| `definemetrics` | `defineutils.metrics` | reports the metrics for a define.xml |
+| `defineview` | `defineutils.defineview` | shows a define.xml in the default browser |
+
+Each command does the same as running its module with Python's -m switch, so `definehtml -d tests/define.xml` and
+`python3 -m defineutils.definehtml -d tests/define.xml` are equivalent; the downloaded commands behave the same, with
+no Python needed. Every command takes --help to list its parameters and --version to show the defineutils version.
+
+The definehtml command transforms a define.xml file into HTML using the stylesheet. It uses the required -d parameter
+to specify the define.xml file path and the optional -o to specify the define.html file path; without -o the HTML is
+written beside the define.xml with an .html extension (tests/define.html below). The display options are
+--comments-table, --no-methods-table, --prefixes, --length-format and --codelist-items N. The exit code is 0 when the
+HTML was written, 2 when it was not (the message is printed to stderr), and 1 for an unexpected error.
 
 ```commandline
-python3 -m defineutils.definehtml -d tests/define.xml -o tests/define.html
+definehtml -d tests/define.xml -o tests/define.html
+
+# write tests/define.html, including the Comments table
+definehtml -d tests/define.xml --comments-table
 ```
 
-The validate command can be executed using the command-line the same way. For validate, only the -d parameter is 
-required to indicate the file path of the define.xml to validate. The -s parameter is optional and gives the file path
+The defineview command renders a define.xml with the stylesheet's default options and opens it in the default
+browser. The define.xml is given without -d, since that is how Windows passes a file to the program that opens it. The
+HTML is written beside the define.xml, as definehtml does without -o, or to the temp folder when that fails; --temp
+always uses the temp folder, and -o writes to the given file. HTML written outside the define.xml's folder has its links
+to datasets and documents pointed back to that folder. --no-open writes the HTML without opening the browser. The exit
+code is 0 when the page was opened, 2 when the define.xml could not be shown (a page saying why is opened instead), and
+1 for an unexpected error. On Windows defineview has no console window: it shows a problem that has no page to go on,
+and its --help and --version, in a message box.
+
+```commandline
+defineview tests/define.xml
+
+# write the HTML to the temp folder rather than beside the define.xml
+defineview --temp tests/define.xml
+```
+
+The definevalidate command schema validates a define.xml. Only the -d parameter is required, to indicate the file
+path of the define.xml to validate. The -s parameter is optional and gives the file path
 of the schema to validate against; without it the bundled Define-XML v2.1 schema is used. Without -o the formatted
 listing goes to the console; with -o it is written to the given file. The --json switch emits machine-readable results
 instead of the listing, and -L sets how many example locations are shown per finding (0 shows all).
 
 ```commandline
 # validate against the bundled Define-XML v2.1 schema
-python3 -m defineutils.validate -d tests/define.xml
+definevalidate -d tests/define.xml
 
 # validate against a different version of the schema
-python3 -m defineutils.validate -d tests/define.xml -s cdisc-define-2.0/define2-0-0.xsd
+definevalidate -d tests/define.xml -s cdisc-define-2.0/define2-0-0.xsd
 
 # save the listing to a file
-python3 -m defineutils.validate -d tests/define.xml -o validation_report.txt
+definevalidate -d tests/define.xml -o validation_report.txt
 
 # machine-readable results for CI or other tooling
-python3 -m defineutils.validate -d tests/define.xml --json
+definevalidate -d tests/define.xml --json
 
 # show every location of every error, rather than the first 5 per finding
-python3 -m defineutils.validate -d tests/define.xml -L 0
+definevalidate -d tests/define.xml -L 0
 ```
 
 The listing names the file and the schema, then each distinct problem with the places it occurs:
@@ -231,7 +389,7 @@ SUMMARY
   Schema: defineutils/validate/schema/cdisc-odm-1.3.2/ODM1-3-2.xsd
 ```
 
-validate sets an exit code so it can gate a CI job: 0 when the define.xml is valid, 1 when it is invalid, and 2 when
+definevalidate sets an exit code so it can gate a CI job: 0 when the define.xml is valid, 1 when it is invalid, and 2 when
 the validation could not be run at all -- the schema would not load, the define.xml could not be read or parsed, or the
 report could not be written. The report is written to stdout and the failure messages to stderr, so a redirected report
 stays clean.
@@ -243,13 +401,13 @@ of lines shown.
 
 ```commandline
 # write the formatted define.xml to a file
-python3 -m defineutils.definepp -d tests/define.xml -o tests/define.pretty.xml
+definepp -d tests/define.xml -o tests/define.pretty.xml
 
 # print the formatted define.xml to the console, one screen at a time
-python3 -m defineutils.definepp -d tests/define.xml | more
+definepp -d tests/define.xml | more
 
 # print only the first 40 lines to the console
-python3 -m defineutils.definepp -d tests/define.xml -H 40
+definepp -d tests/define.xml -H 40
 ```
 
 The definerefs command checks the OID references and definitions in a define.xml. Use the -d parameter to specify
@@ -260,47 +418,47 @@ attempts a best-effort check of a define.xml that is not conformant enough to lo
 
 ```commandline
 # print the listing to the console
-python3 -m defineutils.definerefs -d tests/define.xml
+definerefs -d tests/define.xml
 
 # save the listing to a file
-python3 -m defineutils.definerefs -d tests/define.xml -o refdef_report.txt
+definerefs -d tests/define.xml -o refdef_report.txt
 
 # machine-readable results for CI or other tooling
-python3 -m defineutils.definerefs -d tests/define.xml --json
+definerefs -d tests/define.xml --json
 
 # errors only, with every location listed
-python3 -m defineutils.definerefs -d tests/define.xml --errors-only -L 0
+definerefs -d tests/define.xml --errors-only -L 0
 
 # best-effort check of a non-conformant define.xml
-python3 -m defineutils.definerefs -d broken_define.xml --permissive
+definerefs -d broken_define.xml --permissive
 ```
 
-definerefs sets an exit code, like validate, so it can gate a CI job: 0 when there are no errors (a clean
+definerefs sets an exit code, like definevalidate, so it can gate a CI job: 0 when there are no errors (a clean
 define.xml, or one that only has orphan definition warnings), 1 when there are errors (dangling references,
 duplicate OIDs or type mismatches), and 2 when the check could not be run at all -- the define.xml would not load,
-or the report could not be written. A file that will not load is reported with a recommendation to run the validate
-module to find out why.
+or the report could not be written. A file that will not load is reported with a recommendation to run definevalidate
+to find out why.
 
-The metrics command reports what is in a define.xml. Use the -d parameter to specify the define.xml file path.
+The definemetrics command reports what is in a define.xml. Use the -d parameter to specify the define.xml file path.
 Without -o the report goes to the console; with -o it is written to the given file. The --json switch emits
 machine-readable results instead of the report, --no-datasets leaves the per-dataset table out, and --permissive
 collects best-effort metrics from a define.xml that is not conformant enough to load normally.
 
 ```commandline
 # print the report to the console
-python3 -m defineutils.metrics -d tests/define.xml
+definemetrics -d tests/define.xml
 
 # save the report to a file
-python3 -m defineutils.metrics -d tests/define.xml -o metrics_report.txt
+definemetrics -d tests/define.xml -o metrics_report.txt
 
 # machine-readable results for CI or other tooling
-python3 -m defineutils.metrics -d tests/define.xml --json
+definemetrics -d tests/define.xml --json
 
 # the counts and totals without the per-dataset table
-python3 -m defineutils.metrics -d tests/define.xml --no-datasets
+definemetrics -d tests/define.xml --no-datasets
 
 # best-effort metrics for a non-conformant define.xml
-python3 -m defineutils.metrics -d broken_define.xml --permissive
+definemetrics -d broken_define.xml --permissive
 ```
 
 The report names the file and the study, then the element counts and the datasets:
@@ -351,14 +509,18 @@ SUMMARY
 `def:AnnotatedCRF 0` above is the point of the model-derived element list: this define.xml has no annotated CRF, and
 the report says so rather than staying silent about it.
 
-metrics sets an exit code: 0 when the report was produced, and 2 when it could not be -- the define.xml is missing or
-would not load, or the report could not be written. Unlike validate and definerefs it never exits 1, because a
-metrics report describes a define.xml rather than judging it.
+definemetrics sets an exit code: 0 when the report was produced, and 2 when it could not be -- the define.xml is
+missing or would not load, or the report could not be written. 1 means only that an unexpected error occurred, and its
+traceback is printed to stderr. Unlike definevalidate and definerefs, definemetrics never exits 1 to judge the
+define.xml, because a metrics report describes a define.xml rather than judging it.
 
-If you are running defineutils from the source code using a virtual environment, you may need to activate that virtual
-environment before running the code from the command-line.
+If you are running defineutils from the source code, install it into a virtual environment in editable mode to create
+the commands, and activate that environment before running them. Re-run the install after the version or the commands
+change. Without installing, the `python3 -m` form works from the root of the source tree.
 
 ```commandline
+python3 -m venv .venv
 source .venv/bin/activate
-python3 -m defineutils.validate -d tests/define.xml
+pip install -e .
+definevalidate -d tests/define.xml
 ```

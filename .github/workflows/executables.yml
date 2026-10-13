@@ -1,0 +1,245 @@
+# Builds the defineutils executables on Windows and macOS, uploads each zip as a workflow artifact, and runs the tests
+# against the package and then against the unzipped executables. On a v* tag, once both builds pass, the zips are
+# attached to that tag's GitHub Release, which is created if it does not exist yet. PyPI publishing stays manual.
+#
+# Once Azure Artifact Signing is set up (packaging/SIGNING.md), the sign-windows job signs the Windows build on a v*
+# tag, or on a manual run with "sign" ticked, and only the signed Windows zip is uploaded under the zip's name.
+name: executables
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      sign:
+        description: Sign the Windows build (needs the setup in packaging/SIGNING.md)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+env:
+  # whether this run signs the Windows build: setting the ARTIFACT_SIGNING_ACCOUNT repository variable turns signing
+  # on. The sign-windows job's if repeats the expression, since a job's if cannot read env
+  SIGN_WINDOWS: ${{ vars.ARTIFACT_SIGNING_ACCOUNT != '' && (startsWith(github.ref, 'refs/tags/v') || inputs.sign) }}
+
+jobs:
+  build:
+    name: build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # windows-latest is x64; macos-latest is Apple silicon
+        os: [windows-latest, macos-latest]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Keep LF line endings in the checkout
+        run: git config --global core.autocrlf false
+
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Install defineutils and the build requirements
+        run: python -m pip install . pytest -r packaging/requirements-build.txt
+
+      - name: Build the executables
+        id: build
+        run: python packaging/build_executables.py
+
+      # uploaded before the tests run, so a failing test still leaves a zip to try by hand; the release job only
+      # runs when every step passed
+      - name: Upload the zip
+        if: ${{ !(runner.os == 'Windows' && env.SIGN_WINDOWS == 'true') }}
+        uses: actions/upload-artifact@v7
+        with:
+          path: ${{ steps.build.outputs.zip }}
+          archive: false
+          if-no-files-found: error
+
+      # on a signing run the Windows zip goes to the sign-windows job under another name, so the only artifact named
+      # after the zip is the signed one
+      - name: Upload the zip for signing
+        if: ${{ runner.os == 'Windows' && env.SIGN_WINDOWS == 'true' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-unsigned
+          path: ${{ steps.build.outputs.zip }}
+          if-no-files-found: error
+
+      - name: Test the package
+        run: python -m pytest -q
+
+      - name: Unzip the executables outside the repository (Windows)
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && runner.os == 'Windows' }}
+        shell: pwsh
+        env:
+          ZIP: ${{ steps.build.outputs.zip }}
+        run: Expand-Archive -LiteralPath $env:ZIP -DestinationPath "$env:RUNNER_TEMP/bundle"
+
+      - name: Unzip the executables outside the repository (macOS)
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && runner.os == 'macOS' }}
+        env:
+          ZIP: ${{ steps.build.outputs.zip }}
+        run: unzip -q "$ZIP" -d "$RUNNER_TEMP/bundle"
+
+      - name: Test the executables
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        env:
+          DEFINEUTILS_BIN: ${{ runner.temp }}/bundle/defineutils
+        run: python -m pytest -q
+
+      # signing appends a signature to each file; doing it to a copy of every Windows build, with a throwaway
+      # certificate, shows before a release is signed whether the signed commands still run
+      - name: Sign a copy with a throwaway certificate and run it (Windows)
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && runner.os == 'Windows' }}
+        shell: powershell
+        run: |
+          $copy = Join-Path $env:RUNNER_TEMP "signing-test"
+          New-Item -ItemType Directory $copy | Out-Null
+          Copy-Item -Recurse packaging\dist\defineutils $copy
+          .\packaging\windows_signing.ps1 -Action TrySelfSigned -Dist $copy
+          $runs = @("definehtml", "--version"), @("definevalidate", "--version"), @("definepp", "--version"),
+                  @("definerefs", "--version"), @("definemetrics", "--version"),
+                  @("definevalidate", "-d", "tests\define.xml"),
+                  @("definehtml", "-d", "tests\define.xml", "-o", "$copy\define.html")
+          foreach ($run in $runs) {
+            $command = $run[0]
+            $arguments = @($run | Select-Object -Skip 1)
+            & "$copy\defineutils\$command.exe" @arguments
+            if ($LASTEXITCODE -ne 0) { throw "signed $command $arguments exited $LASTEXITCODE" }
+          }
+          # defineview is windowed, and & is not expected to wait for a windowed program or set $LASTEXITCODE
+          $view = Start-Process -FilePath "$copy\defineutils\defineview.exe" -Wait -PassThru `
+              -ArgumentList "--no-open", "-o", "`"$copy\view.html`"", "tests\define.xml"
+          if ($view.ExitCode -ne 0) { throw "signed defineview exited $($view.ExitCode)" }
+          if (-not (Test-Path "$copy\view.html")) { throw "signed defineview wrote no HTML" }
+
+  sign-windows:
+    # env.SIGN_WINDOWS, repeated
+    if: vars.ARTIFACT_SIGNING_ACCOUNT != '' && (startsWith(github.ref, 'refs/tags/v') || inputs.sign)
+    needs: build
+    runs-on: windows-latest
+    # the Azure federated credential trusts this environment, whose rules say which tags and branches may sign
+    environment: signing
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Keep LF line endings in the checkout
+        run: git config --global core.autocrlf false
+
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Install defineutils and the build requirements
+        run: python -m pip install . pytest -r packaging/requirements-build.txt
+
+      # the zip the build job built and tested, rather than a rebuild
+      - uses: actions/download-artifact@v8
+        with:
+          name: windows-unsigned
+          path: ${{ runner.temp }}/unsigned
+
+      - name: Unzip the build
+        shell: pwsh
+        run: Expand-Archive -Path "$env:RUNNER_TEMP/unsigned/defineutils-*.zip" -DestinationPath packaging/dist
+
+      - name: List the files to sign
+        shell: powershell
+        run: .\packaging\windows_signing.ps1 -Action List
+
+      - uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # the certificates last days, so every signature carries a timestamp
+      - name: Sign with Azure Artifact Signing
+        uses: azure/artifact-signing-action@v2
+        with:
+          endpoint: ${{ vars.ARTIFACT_SIGNING_ENDPOINT }}
+          signing-account-name: ${{ vars.ARTIFACT_SIGNING_ACCOUNT }}
+          certificate-profile-name: ${{ vars.ARTIFACT_SIGNING_PROFILE }}
+          files-catalog: ${{ github.workspace }}\packaging\dist\to-sign.txt
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
+
+      - name: Check the signatures
+        shell: powershell
+        run: .\packaging\windows_signing.ps1 -Action Check
+
+      - name: Zip the signed executables
+        id: zip
+        run: python packaging/build_executables.py --zip-only
+
+      - name: Upload the signed zip
+        uses: actions/upload-artifact@v7
+        with:
+          path: ${{ steps.zip.outputs.zip }}
+          archive: false
+          if-no-files-found: error
+
+      - name: Unzip the signed executables outside the repository
+        shell: pwsh
+        env:
+          ZIP: ${{ steps.zip.outputs.zip }}
+        run: Expand-Archive -LiteralPath $env:ZIP -DestinationPath "$env:RUNNER_TEMP/bundle"
+
+      - name: Test the signed executables
+        env:
+          DEFINEUTILS_BIN: ${{ runner.temp }}/bundle/defineutils
+        run: python -m pytest -q
+
+  release:
+    # sign-windows is skipped until signing is set up, and the Windows zip is then unsigned; once it runs, it must pass
+    if: >-
+      ${{ startsWith(github.ref, 'refs/tags/v') && !cancelled() && needs.build.result == 'success'
+      && (needs.sign-windows.result == 'success' || needs.sign-windows.result == 'skipped') }}
+    needs: [build, sign-windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: defineutils-*
+          path: zips
+          merge-multiple: true
+          skip-decompress: true
+
+      - name: Attach the zips to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          # the zip names carry the package version, so a tag that does not match it stops here
+          zips=()
+          for platform in windows-x64 macos-arm64; do
+            zip=$(find zips -type f -name "defineutils-${TAG#v}-$platform.zip")
+            if [ -z "$zip" ]; then
+              echo "::error::no defineutils-${TAG#v}-$platform.zip: does $TAG match the package version?"
+              exit 1
+            fi
+            zips+=("$zip")
+          done
+          if ! gh release view "$TAG" > /dev/null 2>&1; then
+            gh release create "$TAG" --verify-tag --title "$TAG" --generate-notes
+          fi
+          gh release upload "$TAG" "${zips[@]}" --clobber

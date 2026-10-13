@@ -1,6 +1,5 @@
 import json
 import subprocess
-import sys
 from pathlib import Path
 import pytest
 import xmlschema
@@ -81,13 +80,6 @@ def _raw_error_count(define: Path, schema: Path) -> int:
 
 def _checks(result) -> set:
     return {f.check for f in result.findings}
-
-
-def _run_cli(*cli_args) -> subprocess.CompletedProcess:
-    """Run `python -m defineutils.validate` from the repo root so the package resolves
-    whether or not it is installed."""
-    return subprocess.run([sys.executable, "-m", "defineutils.validate", *cli_args],
-                          capture_output=True, cwd=str(data_path().parent))
 
 
 def test_validate_define_xml_success():
@@ -363,8 +355,8 @@ def test_validate_to_file_json(tmp_path: Path, broken_define: Path):
 def test_validate_to_file_errors_graceful(tmp_path: Path):
     validator = DefineSchemaValidator(define_file())
 
-    # writing to a directory path triggers the IsADirectoryError branch
-    with pytest.raises(DefineSchemaValidationError):
+    # named as a folder on every platform, though Windows raises PermissionError rather than IsADirectoryError
+    with pytest.raises(DefineSchemaValidationError, match="write to a directory"):
         validator.validate_to_file(tmp_path)
 
 
@@ -376,8 +368,8 @@ def test_validate_to_console(capsys):
     assert "SUMMARY" in captured.out
 
 
-def test_cli_exit_code_valid():
-    completed = _run_cli("-d", str(define_file()))
+def test_cli_exit_code_valid(run_cli):
+    completed = run_cli("definevalidate", "-d", str(define_file()))
 
     assert completed.returncode == 0
     assert b"Define-XML schema validation" in completed.stdout
@@ -385,36 +377,36 @@ def test_cli_exit_code_valid():
     assert b"Traceback" not in completed.stderr
 
 
-def test_cli_schema_argument_accepted():
-    completed = _run_cli("-d", str(define_file()), "-s", str(bundled_schema()))
+def test_cli_schema_argument_accepted(run_cli):
+    completed = run_cli("definevalidate", "-d", str(define_file()), "-s", str(bundled_schema()))
 
     assert completed.returncode == 0
     assert b"No schema validation errors found." in completed.stdout
     assert b"Traceback" not in completed.stderr
 
 
-def test_cli_exit_code_invalid_define(broken_define: Path):
-    completed = _run_cli("-d", str(broken_define))
+def test_cli_exit_code_invalid_define(broken_define: Path, run_cli):
+    completed = run_cli("definevalidate", "-d", str(broken_define))
 
     assert completed.returncode == 1
     assert b"ERRORS (" in completed.stdout
     assert b"Traceback" not in completed.stderr
 
 
-def test_cli_exit_code_bad_schema(tmp_path: Path):
+def test_cli_exit_code_bad_schema(tmp_path: Path, run_cli):
     missing_schema = tmp_path / "no_such_schema.xsd"
 
-    completed = _run_cli("-d", str(define_file()), "-s", str(missing_schema))
+    completed = run_cli("definevalidate", "-d", str(define_file()), "-s", str(missing_schema))
 
     assert completed.returncode == 2
     assert b"Could not load the schema" in completed.stderr
     assert b"Traceback" not in completed.stderr
 
 
-def test_cli_report_to_file(tmp_path: Path, broken_define: Path):
+def test_cli_report_to_file(tmp_path: Path, broken_define: Path, run_cli):
     out_file = tmp_path / "report.txt"
 
-    completed = _run_cli("-d", str(broken_define), "-o", str(out_file))
+    completed = run_cli("definevalidate", "-d", str(broken_define), "-o", str(out_file))
 
     assert completed.returncode == 1
     assert "ERRORS (" in out_file.read_text(encoding="utf-8")
@@ -422,29 +414,28 @@ def test_cli_report_to_file(tmp_path: Path, broken_define: Path):
     assert completed.stdout == b""
 
 
-def test_cli_json_to_file(tmp_path: Path, broken_define: Path):
+def test_cli_json_to_file(tmp_path: Path, broken_define: Path, run_cli):
     out_file = tmp_path / "report.json"
 
-    completed = _run_cli("-d", str(broken_define), "-o", str(out_file), "--json")
+    completed = run_cli("definevalidate", "-d", str(broken_define), "-o", str(out_file), "--json")
 
     assert completed.returncode == 1
     assert json.loads(out_file.read_text(encoding="utf-8"))["counts"]["errors"] > 1
 
 
-def test_cli_max_locations():
-    completed = _run_cli("-d", str(define_file()), "-s", str(odm_schema()), "-L", "0")
+def test_cli_max_locations(run_cli):
+    completed = run_cli("definevalidate", "-d", str(define_file()), "-s", str(odm_schema()), "-L", "0")
 
     assert completed.returncode == 1
     assert b"... and" not in completed.stdout
 
 
-def test_cli_broken_pipe_exits_cleanly():
+def test_cli_broken_pipe_exits_cleanly(cli_command):
     # a reader (e.g. `more`/`head`) that quits after one line closes the pipe early; the CLI
     # should exit 0 with no traceback. The JSON report against the ODM schema is ~100KB, larger
     # than the OS pipe buffer, so the writer is still writing when the read end closes.
     p = subprocess.Popen(
-        [sys.executable, "-m", "defineutils.validate", "-d", str(define_file()),
-         "-s", str(odm_schema()), "--json"],
+        [*cli_command("definevalidate"), "-d", str(define_file()), "-s", str(odm_schema()), "--json"],
         stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=str(data_path().parent))
     try:
         p.stdout.readline()          # read one line, like a pager's first screen

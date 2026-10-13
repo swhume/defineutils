@@ -6,6 +6,7 @@ hand-codes a reference table. The traversal, however, is done here rather than v
 verify_oids(): odmlib raises on the first violation and collects references as sets of OID
 values, so a report built on it could name neither every problem nor where each one lives.
 """
+import os
 from contextlib import nullcontext
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -161,6 +162,10 @@ class DefineRefChecker:
         except FileNotFoundError as e:
             raise DefineRefCheckError(f"File {out_file} not found.\n{e}")
         except PermissionError as e:
+            # Windows raises PermissionError, not IsADirectoryError, for a folder; os.path.isdir never raises,
+            # where Path.is_dir() can when a parent folder is unreadable
+            if os.path.isdir(out_file):
+                raise DefineRefCheckError(f"Error attempting to write to a directory {out_file}.")
             raise DefineRefCheckError(f"Permission error attempting to write to {out_file}.\n{e}")
         except IsADirectoryError as e:
             raise DefineRefCheckError(f"Error attempting to write to a directory {out_file}.\n{e}")
@@ -235,7 +240,7 @@ class DefineRefChecker:
                    f"No reference/definition checks were run. This file must parse as conformant\n"
                    f"{model} before its OID references can be checked. Run the validate\n"
                    f"utility to identify the problems:\n\n"
-                   f"    python -m defineutils.validate -d {self.define}\n\n"
+                   f"    definevalidate -d {self.define}\n\n"
                    f"Then re-run this check.")
         if not self.permissive and self._permissive_would_load():
             message += (" To attempt a best-effort check of the file as-is,\n"
