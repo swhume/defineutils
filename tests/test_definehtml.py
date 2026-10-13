@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from lxml import html
 
-from defineutils.definehtml import DefineHtml, DefineHtmlGenerationError
+from defineutils.definehtml import DefineHtml, DefineHtmlGenerationError, DefineHtmlWriteError
 from defineutils.definehtml import definehtml as definehtml_module
 
 NS = {"odm": "http://www.cdisc.org/ns/odm/v1.3",
@@ -261,6 +261,82 @@ def test_safe_document_links_are_kept(edited_define, render, href: str):
     page = render(edited_define(set_acrf_href(href)))
 
     assert f"{href}#page=1" in {a.get("href") for a in page.iter("a")}
+
+
+# absolute_links: relative links resolved against the define.xml's folder
+
+@pytest.mark.parametrize("href, target", [("acrf.pdf", "acrf.pdf"), ("docs/acrf.pdf", "docs/acrf.pdf"),
+                                          ("../docs/acrf.pdf", "../docs/acrf.pdf"),
+                                          ("..\\docs\\acrf.pdf", "../docs/acrf.pdf")])
+def test_absolute_links_resolve_relative_links_against_the_define_folder(edited_define, render, tmp_path: Path,
+                                                                         href: str, target: str):
+    page = render(edited_define(set_acrf_href(href)), absolute_links=True)
+
+    # normpath, not resolve(), which would follow a symlinked temp folder (macOS's /var) that the links keep
+    expected = Path(os.path.normpath(tmp_path / target)).as_uri() + "#page=1"
+    assert expected in {a.get("href") for a in page.iter("a")}
+
+
+@pytest.mark.parametrize("href", ["https://example.org/acrf.pdf", "file:///c:/docs/acrf.pdf", "C:\\docs\\acrf.pdf"])
+def test_absolute_links_leave_links_with_a_scheme_alone(edited_define, render, href: str):
+    page = render(edited_define(set_acrf_href(href)), absolute_links=True)
+
+    assert f"{href}#page=1" in {a.get("href") for a in page.iter("a")}
+
+
+def test_absolute_links_leave_links_within_the_page_alone(render):
+    def page_links(page):
+        return [a.get("href") for a in page.iter("a") if (a.get("href") or "").startswith("#")]
+
+    relative = render(define_file())
+    absolute = render(define_file(), absolute_links=True)
+
+    assert page_links(absolute) == page_links(relative)
+    assert len(page_links(absolute)) > 100
+    # every other link is absolute
+    assert [href for href in (a.get("href") for a in absolute.iter("a"))
+            if href and not href.startswith(("#", "file:", "http:", "https:"))] == []
+
+
+def test_absolute_links_still_reduce_unsafe_links_to_text(edited_define, render):
+    page = render(edited_define(set_acrf_href("javascript:alert(1)")), absolute_links=True)
+
+    assert not [a for a in page.iter("a") if "script" in (a.get("href") or "")]
+
+
+def test_absolute_links_default_to_off(edited_define, render):
+    page = render(edited_define(set_acrf_href("acrf.pdf")))
+
+    assert "acrf.pdf#page=1" in {a.get("href") for a in page.iter("a")}
+
+
+# a destination that can't be written raises DefineHtmlWriteError, a DefineHtmlGenerationError
+
+def _no_write(file, *args, **kwargs):
+    raise PermissionError(13, "Permission denied", str(file))
+
+
+@pytest.mark.parametrize("destination", ["the input", "a folder", "a missing folder", "unwritable"])
+def test_unwritable_destinations_raise_the_write_error(tmp_path: Path, monkeypatch, destination: str):
+    define = tmp_path / "define.xml"
+    shutil.copy(define_file(), define)
+    out_file = {"the input": define, "a folder": tmp_path, "a missing folder": tmp_path / "no_such_dir" / "x.html",
+                "unwritable": tmp_path / "define.html"}[destination]
+    if destination == "unwritable":
+        monkeypatch.setattr(definehtml_module, "open", _no_write, raising=False)
+
+    with pytest.raises(DefineHtmlWriteError):
+        DefineHtml(define).transform_to_html_file(out_file)
+    assert issubclass(DefineHtmlWriteError, DefineHtmlGenerationError)
+
+
+def test_a_define_that_does_not_render_is_not_a_write_error(tmp_path: Path):
+    bad_xml = tmp_path / "bad.xml"
+    bad_xml.write_text("<define><broken></define>", encoding="utf-8")
+
+    with pytest.raises(DefineHtmlGenerationError) as excinfo:
+        DefineHtml(bad_xml).transform_to_html_file(tmp_path / "bad.html")
+    assert not isinstance(excinfo.value, DefineHtmlWriteError)
 
 
 # stylesheet options

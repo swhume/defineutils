@@ -48,6 +48,16 @@ def test_definehtml_writes_the_same_html(define, tmp_path, run_cli, run_module):
 
 
 @pytest.mark.parametrize("define", DEFINES)
+def test_defineview_writes_the_same_html(define, tmp_path, run_cli, run_module):
+    # exit codes and files only: the windowed Windows build may have no stdout or stderr
+    command = run_cli("defineview", "--no-open", "-o", str(tmp_path / "command.html"), str(data_path() / define))
+    module = run_module("defineview", "--no-open", "-o", str(tmp_path / "module.html"), str(data_path() / define))
+
+    assert command.returncode == module.returncode == 0
+    assert (tmp_path / "command.html").read_bytes() == (tmp_path / "module.html").read_bytes()
+
+
+@pytest.mark.parametrize("define", DEFINES)
 @pytest.mark.parametrize("report", REPORTS, ids=" ".join)
 def test_reports_match(define, report, run_cli, run_module):
     name, *options = report

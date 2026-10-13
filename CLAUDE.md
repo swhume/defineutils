@@ -18,18 +18,20 @@ record only what a future session needs to know to avoid getting it wrong.
 
 ## Project Overview
 
-defineutils is a Python package for working with CDISC Define-XML v2.1 files. It provides five modules:
+defineutils is a Python package for working with CDISC Define-XML v2.1 files. It provides six modules:
 - **definehtml**: Transforms define.xml files to HTML using an embedded XSL stylesheet
 - **validate**: Schema validates define.xml files using embedded XSD schemas
 - **definepp**: Pretty-prints (re-indents) define.xml files
 - **definerefs**: Checks OID reference/definition integrity in define.xml files
 - **metrics**: Reports element counts and file/study metrics for define.xml files
+- **defineview**: Renders a define.xml with definehtml and opens it in the default browser (double-click on Windows)
 
 ## Commands
 
 ### Install dependencies
 ```bash
-pip install -e .   # also creates the five commands; re-run after the version or [project.scripts] changes
+pip install -e .   # also creates the six commands; re-run after the version, [project.scripts] or
+                   # [project.gui-scripts] changes
 ```
 
 ### Run tests
@@ -75,26 +77,31 @@ definerefs -d tests/define.xml
 
 # Report define.xml metrics (add -o, --json, --no-datasets, --permissive as needed)
 definemetrics -d tests/define.xml
+
+# Show a define.xml in the browser: the path is positional (--temp, -o, --no-open as needed)
+defineview tests/define.xml
 ```
 
 ## Architecture
 
-The package is structured as `defineutils` with five submodules:
+The package is structured as `defineutils` with six submodules:
 - `defineutils/definehtml/` - HTML generation from Define-XML
 - `defineutils/validate/` - Schema validation
 - `defineutils/definepp/` - Pretty-printing
 - `defineutils/definerefs/` - OID reference/definition checking
 - `defineutils/metrics/` - Element counts and file/study metrics
+- `defineutils/defineview/` - Showing a define.xml in the browser
 
 Each submodule follows the same pattern:
 - Main class in `<submodule>.py` with a custom exception class
 - `__init__.py` exports the main class and exception
 - `__main__.py` holds the CLI: `main()` parses the arguments and returns the exit code, and `run()` is the entry
-  point for both the console script (`[project.scripts]` in `pyproject.toml`) and `python -m`
+  point for both the console script (`[project.scripts]` in `pyproject.toml`; defineview is in
+  `[project.gui-scripts]`) and `python -m`
 
 CLI invariants:
-- The console scripts call `run()` directly and never execute the `if __name__ == "__main__":` block, so the Ctrl-C /
-  broken-pipe handling must stay in `run()`. Point a new command at `run`, not `main`.
+- The console and GUI scripts call `run()` directly and never execute the `if __name__ == "__main__":` block, so the
+  Ctrl-C / broken-pipe handling must stay in `run()`. Point a new command at `run`, not `main`.
 - Each parser sets `prog=` to its command name (otherwise usage reads `__main__.py`, or `definehtml.exe` once frozen)
   and has `--version`.
 - Messages that tell the user to run another tool name the command (`definevalidate -d <file>`), never
@@ -108,11 +115,12 @@ CLI invariants:
   before writing instead. `tests/test_write_to_folder.py` simulates the Windows error for the other four modules.
 
 **Executables** (`packaging/`, built by `.github/workflows/executables.yml` on Windows x64 and macOS arm64):
-`packaging/defineutils.spec` builds five one-folder executables from `packaging/entry/<command>.py`, passed to one
+`packaging/defineutils.spec` builds six one-folder executables from `packaging/entry/<command>.py`, passed to one
 shared `COLLECT` so they share one `_internal` folder; `build_executables.py` adds `README.txt` and `LICENSES/` (one
 folder per bundled distribution, found from defineutils' requirements, plus Python and PyInstaller) and zips it.
-- A new command needs an entry script and a `COMMANDS` entry in the spec, as well as `[project.scripts]` and the
-  `COMMANDS` dict in `tests/conftest.py`.
+- A new command needs an entry script and a `COMMANDS` entry in the spec, as well as `[project.scripts]` (or
+  `[project.gui-scripts]`), the `COMMANDS` dict in `tests/conftest.py` and `ENTRY_MODULES` in
+  `tests/test_entry_points.py`.
 - A new data file or computed import, in defineutils or a dependency, must be collected in the spec, or the frozen
   build fails only when that code runs. CI's run of the tests against the unzipped executables is what catches it.
 - Spec choices that were measured; don't revert them:
@@ -128,8 +136,9 @@ folder per bundled distribution, found from defineutils' requirements, plus Pyth
   zip names carry the package version, so the release job fails when the tag doesn't match it.
 - The version is in both `pyproject.toml` and `defineutils/__init__.py`. The zip name uses `__version__`, and
   `tests/test_entry_points.py` fails in CI when the two differ.
-- README.md's "Downloading the commands" section and `packaging/README.txt` name the zips and give the unblock steps;
-  keep them in step with `platform_name()` and with each other.
+- README.md's "Downloading the commands" and "Opening a define.xml with a double-click" sections and
+  `packaging/README.txt` name the zips and give the unblock and "Open with" steps; keep them in step with
+  `platform_name()` and with each other.
 - CI checks out with LF line endings, while a local working copy may have CRLF (`tests/define.xml` does), so tests
   must not pin a test file's byte size.
 - Windows can't deliver SIGINT to a child process, so the subprocess Ctrl-C test is skipped there;
@@ -150,6 +159,8 @@ folder per bundled distribution, found from defineutils' requirements, plus Pyth
   signed one, which the release job's `defineutils-*` pattern picks up.
 - **The throwaway-certificate check:** every Windows build signs a copy with a throwaway self-signed certificate
   (`-Action TrySelfSigned`) and runs the commands from it.
+- **Running defineview in workflow PowerShell:** it is windowed, and `&` is not expected to wait for a windowed
+  program or set `$LASTEXITCODE`, so use `Start-Process -Wait -PassThru` and check `.ExitCode`.
 - **PowerShell version:** `windows_signing.ps1` runs under Windows PowerShell 5.1 (`shell: powershell`), where
   `New-SelfSignedCertificate` and the Authenticode cmdlets are built in. Keep it free of PowerShell 7-only syntax and
   of .NET Core-only APIs.
@@ -162,7 +173,9 @@ module-level `STYLESHEET`) once in `__init__` and renders via `transform_to_html
 that swallow the rest of the page. That was the real cause of the a0022b8 "text shown as hyperlinks" workaround in the
 stylesheet.
 
-Every failure raises `DefineHtmlGenerationError`; nothing returns an empty result or writes nothing silently.
+Every failure raises `DefineHtmlGenerationError`; nothing returns an empty result or writes nothing silently. A
+destination that can't be written (the output check, or the write itself) raises its subclass `DefineHtmlWriteError`,
+so a caller can tell "couldn't write there" from "couldn't render"; defineview falls back to the temp folder on it.
 - XSLT errors carry the distinct `error_log` messages, because `str(XSLTApplyError)` can be one word (`'first'`).
 - Input must have an ODM v1.3 root and a MetaDataVersion with the v2.1 `def:DefineVersion`. The stylesheet binds `def:`
   to the v2.1 namespace, so other input would otherwise render without error but with most of its content missing.
@@ -172,6 +185,12 @@ Every failure raises `DefineHtmlGenerationError`; nothing returns an empty resul
 Before serializing, `_neutralize_unsafe_links()` turns each `<a href>` into a `<span>` unless its scheme is relative,
 `http`, `https`, `file` or a one-letter Windows drive, since hrefs are copied verbatim from `def:leaf/@xlink:href` and
 `ExternalCodeList/@href`.
+
+`absolute_links=True` (not a stylesheet option, and not a CLI flag) then has `_absolutize_links()` resolve each
+relative `<a href>` against the define.xml's folder as a `file:` URL, for HTML saved elsewhere. Fragment-only links
+(`#IG.AE`) and links with a scheme are left alone. Don't replace it with a `<base href>`: that would also redirect the
+page's many `#fragment` links. The stylesheet emits links only as `<a href>`. The folder comes from `os.path.abspath`,
+not `resolve()`, which turns a mapped network drive into its UNC path.
 
 The stylesheet's five `xsl:param`s are constructor options:
 
@@ -278,5 +297,28 @@ table's `Variables` column and `total_variable_refs` count only `len(ItemGroupDe
 differ by design. Exit codes are 0 (report produced), 2 (could not be produced) and 1 (an unexpected exception, with
 the traceback on stderr). 1 never judges the file, because a metrics report describes a file rather than judging it.
 `main()` re-raises `BrokenPipeError` ahead of its `except Exception`, so quitting a pager still exits 0 in `run()`.
+
+**defineview module**: What double-clicking a define.xml runs on Windows, once the user has chosen defineview.exe
+for it with "Open with" (README.md has the user's steps; there is no installer or registry code). `DefineViewer`
+renders with `DefineHtml`, writes the HTML and `open_in_browser()` opens it with `webbrowser`.
+- **Where the HTML goes:** beside the define.xml as `<stem>.html` by default (relative links, byte-identical to
+  definehtml's), replacing any file there. On `DefineHtmlWriteError` it falls back to `temp_folder`,
+  `<tempfile.gettempdir()>/defineutils/<12 hex of the define path's sha256>/`, rendering again with
+  `absolute_links=True`. `--temp` always uses it; `-o` writes where it is told. HTML outside the define.xml's folder
+  always gets absolute links.
+- **Failures:** a `DefineHtmlGenerationError` writes `<stem>.error.html` to `temp_folder`, never beside the define.xml,
+  and opens it (exit 2). An unexpected exception does the same with the traceback (exit 1). Both also go to stderr when
+  there is one.
+- **The path is positional:** "Open with" passes only `"%1"`, so the command can't need `-d` or any option.
+- **No console on Windows:** the spec builds it windowed there, and pip installs it as a GUI script, so `sys.stdout`
+  and `sys.stderr` can be `None`. Never report only to stderr: a problem goes on a page, or through `tell_user()`,
+  which shows a `MessageBoxW` when there is no stderr. `parse_args()` captures argparse's output (help, `--version`,
+  usage errors) for the same reason. A message box waits for a click, so `run_cli` has a timeout (`CLI_TIMEOUT`) and
+  CLI tests of defineview check exit codes and files, not output. Starting defineview with no path shows the help.
+- **Never open an `.xml` through the OS** (`webbrowser`, `os.startfile`): when defineview is the `.xml` default, that
+  starts defineview again. The error page links to the file instead, and the browser follows that link itself.
+- **Tests that patch `sys.stdout` / `sys.stderr`** must do it in the test body: pytest's capturing sets both again
+  after the fixtures run.
+- macOS double-click needs a `.app` bundle (PyInstaller `BUNDLE`, `argv_emulation`); deferred, see `SIMPLE_LOAD.md`.
 
 The definehtml and validate modules bundle their required resources (XSL stylesheet, XSD schemas) to simplify usage.

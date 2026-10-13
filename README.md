@@ -2,12 +2,13 @@
 
 ## CDISC Define-XML v2.1 utilities
 
-The defineutils package currently includes 5 modules:
+The defineutils package currently includes 6 modules:
 1. `definehtml.py`: transforms a define.xml into a define.html using the stylesheet
 2. `validate.py`: schema validates a define.xml file
 3. `definepp.py`: pretty-prints (re-indents) a define.xml file
 4. `definerefs.py`: checks the OID reference/definition integrity of a define.xml file
 5. `metrics.py`: reports metrics for a define.xml file
+6. `defineview.py`: renders a define.xml with definehtml and opens it in the default browser
 
 The `definehtml.py` module includes the Define-XML v2.1 style sheet to simplify usage. It generates a define.html file,
 or alternatively returns the HTML as a string. It renders Define-XML v2.1 only: a file in another Define-XML version,
@@ -40,6 +41,11 @@ variables in each. The element list is derived from the Define-XML v2.1 model ra
 element the file does not use is reported as 0 instead of being left out -- a define.xml with no `MethodDef` at all
 says so. The report can be printed to the console, written to a text file, or emitted as JSON.
 
+The `defineview.py` module shows a define.xml in the browser: it writes the HTML beside the define.xml and opens it in
+the default browser, or opens a page saying why the file could not be shown. On Windows, choosing defineview once to
+open define.xml files lets a double-click on a define.xml show it in the browser; see
+[Opening a define.xml with a double-click](#opening-a-definexml-with-a-double-click-windows).
+
 ## Installing defineutils
 
 There are three ways to get defineutils:
@@ -53,7 +59,8 @@ defineutils needs Python 3.10 or later. Install it with pip:
 pip install defineutils
 ```
 
-Installing adds five commands -- definehtml, definevalidate, definepp, definerefs and definemetrics -- described in
+Installing adds six commands -- definehtml, definevalidate, definepp, definerefs, definemetrics and defineview --
+described in
 [Running defineutils from the Command-line](#running-defineutils-from-the-command-line).
 
 If you only need the commands and do not have Python, [uv](https://docs.astral.sh/uv/getting-started/installation/)
@@ -68,7 +75,7 @@ to pick it up. `uv tool upgrade defineutils` installs a newer release later.
 
 ### Downloading the commands for Windows or macOS
 
-The five commands are also built as programs that run without Python. Download the zip for your computer from the
+The six commands are also built as programs that run without Python. Download the zip for your computer from the
 [latest release](https://github.com/swhume/defineutils/releases/latest):
 
 | Computer | Download |
@@ -78,7 +85,7 @@ The five commands are also built as programs that run without Python. Download t
 
 On Linux or an Intel Mac, install with uv or pip instead.
 
-The zip holds a defineutils folder with the five commands, the _internal folder they need to run, a README.txt and a
+The zip holds a defineutils folder with the six commands, the _internal folder they need to run, a README.txt and a
 LICENSES folder. Keep _internal beside the commands. The commands are not code-signed, so Windows and macOS warn about
 them:
 - **Windows**: before unzipping, right-click the downloaded zip, choose Properties, tick Unblock and click OK. If
@@ -105,10 +112,44 @@ folder explains how. The commands work as described in
 [Running defineutils from the Command-line](#running-defineutils-from-the-command-line). To update, download the zip
 from the newer release and replace the folder. The download holds only the commands; the Python code needs pip.
 
+### Opening a define.xml with a double-click (Windows)
+
+defineview renders a define.xml and opens it in your default browser. Choose it once to open define.xml files, and a
+double-click on a define.xml shows it in the browser, with no terminal and no console window:
+
+1. Keep the defineutils folder where it will stay, for example `%LOCALAPPDATA%\Programs\defineutils`, unblocking the
+   zip first as above. Windows remembers where defineview.exe is, so to update, replace the folder's contents rather
+   than unzipping the new release somewhere else.
+2. Right-click a define.xml, choose Open with, then Choose another app. Choose "Choose an app on your PC" (on Windows
+   10, More apps, then "Look for another app on this PC") and select defineview.exe in the defineutils folder.
+3. Windows asks whether to use defineview just once or always (on Windows 10, with the "Always use this app to open
+   .xml files" box):
+   - **Just once** leaves .xml files opening as they do now, and keeps defineview in the Open with menu for next time.
+   - **Always** makes a double-click open every .xml file with defineview. An XML file that is not a Define-XML v2.1
+     file gets a page saying so, with a link that shows it as plain XML in the browser.
+
+defineview writes the HTML beside the define.xml, as define.html for define.xml, replacing any file of that name, so
+the page's links to the datasets and documents in that folder work. When it can't write there, such as on a read-only
+share, it writes the HTML to your temp folder instead, with links that still point to the define.xml's folder. When a
+define.xml can't be shown, because it is not well-formed or not Define-XML v2.1, a page in the browser says why.
+
+To use the temp folder every time, so that nothing is written beside the define.xml:
+- make a shortcut to defineview.exe, add ` --temp` to the end of the Target in the shortcut's Properties, and drop
+  define.xml files onto the shortcut;
+- to have it in the right-click Send to menu as well, move the shortcut to the Send to folder: type `shell:sendto` in
+  File Explorer's address bar to open it.
+
+To stop .xml files opening with defineview, open Settings > Apps > Default apps, find .xml, and choose another app.
+
+If you installed defineutils with pip or uv rather than downloading it, choose the defineview.exe they installed
+in step 2; in PowerShell, `(Get-Command defineview).Source` shows where it is. On a Mac, run defineview in Terminal for
+now (`./defineview ~/studies/define.xml`); opening a define.xml with a double-click is not available there yet.
+
 ## Using defineutils
 
-Currently, defineutils contains 5 modules: one for generating an HTML rendition, one for schema validation, one
-for pretty-printing, one for OID reference/definition checking, and one for reporting metrics.
+Currently, defineutils contains 6 modules: one for generating an HTML rendition, one for schema validation, one
+for pretty-printing, one for OID reference/definition checking, one for reporting metrics, and one that opens a
+define.xml in the browser.
 
 Example code used to generate a define.html from a define.xml:
 ```python
@@ -129,9 +170,11 @@ html = DefineHtml(Path(__file__).parent.joinpath("define.xml"), comments_table=T
 The above code applies the Define-XML v2.1 stylesheet to the define.xml to generate the define.html file. The
 stylesheet is embedded in the module. Every failure raises the custom DefineHtmlGenerationError exception: a missing,
 unreadable or malformed define.xml, a file that is not Define-XML v2.1, a stylesheet error, or an output file that
-cannot be written or that is the input define.xml itself. `transform_to_html_string()` returns a `str`. The display
-options are keyword arguments to `DefineHtml`: `codelist_items` (default 5), `methods_table` (default True),
-`comments_table`, `prefixes` and `length_format` (default False).
+cannot be written or that is the input define.xml itself; the last two raise its subclass DefineHtmlWriteError.
+`transform_to_html_string()` returns a `str`. The display options are keyword arguments to `DefineHtml`:
+`codelist_items` (default 5), `methods_table` (default True), `comments_table`, `prefixes` and `length_format` (default
+False). For HTML saved in a different folder from the define.xml, `absolute_links=True` rewrites the links to datasets
+and documents as `file:` URLs pointing to the define.xml's folder, so they still work.
 
 Example code used to schema validate a define.xml:
 ```python
@@ -267,6 +310,7 @@ Installing defineutils, or downloading the commands, gives a command for each mo
 | `definepp` | `defineutils.definepp` | pretty-prints a define.xml |
 | `definerefs` | `defineutils.definerefs` | checks the OID references and definitions in a define.xml |
 | `definemetrics` | `defineutils.metrics` | reports the metrics for a define.xml |
+| `defineview` | `defineutils.defineview` | shows a define.xml in the default browser |
 
 Each command does the same as running its module with Python's -m switch, so `definehtml -d tests/define.xml` and
 `python3 -m defineutils.definehtml -d tests/define.xml` are equivalent; the downloaded commands behave the same, with
@@ -283,6 +327,22 @@ definehtml -d tests/define.xml -o tests/define.html
 
 # write tests/define.html, including the Comments table
 definehtml -d tests/define.xml --comments-table
+```
+
+The defineview command renders a define.xml with the stylesheet's default options and opens it in the default
+browser. The define.xml is given without -d, since that is how Windows passes a file to the program that opens it. The
+HTML is written beside the define.xml, as definehtml does without -o, or to the temp folder when that fails; --temp
+always uses the temp folder, and -o writes to the given file. HTML written outside the define.xml's folder has its links
+to datasets and documents pointed back to that folder. --no-open writes the HTML without opening the browser. The exit
+code is 0 when the page was opened, 2 when the define.xml could not be shown (a page saying why is opened instead), and
+1 for an unexpected error. On Windows defineview has no console window: it shows a problem that has no page to go on,
+and its --help and --version, in a message box.
+
+```commandline
+defineview tests/define.xml
+
+# write the HTML to the temp folder rather than beside the define.xml
+defineview --temp tests/define.xml
 ```
 
 The definevalidate command schema validates a define.xml. Only the -d parameter is required, to indicate the file

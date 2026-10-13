@@ -116,6 +116,11 @@ jobs:
             & "$copy\defineutils\$command.exe" @arguments
             if ($LASTEXITCODE -ne 0) { throw "signed $command $arguments exited $LASTEXITCODE" }
           }
+          # defineview is windowed, and & is not expected to wait for a windowed program or set $LASTEXITCODE
+          $view = Start-Process -FilePath "$copy\defineutils\defineview.exe" -Wait -PassThru `
+              -ArgumentList "--no-open", "-o", "`"$copy\view.html`"", "tests\define.xml"
+          if ($view.ExitCode -ne 0) { throw "signed defineview exited $($view.ExitCode)" }
+          if (-not (Test-Path "$copy\view.html")) { throw "signed defineview wrote no HTML" }
 
   sign-windows:
     # env.SIGN_WINDOWS, repeated

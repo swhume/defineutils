@@ -34,9 +34,14 @@ definepp = "defineutils.definepp.__main__:run"
 definerefs = "defineutils.definerefs.__main__:run"
 definemetrics = "defineutils.metrics.__main__:run"
 
+[project.gui-scripts]
+# a GUI script: on Windows pip installs it with a windowed launcher, so opening a define.xml with it opens no console
+# window. It calls run() too
+defineview = "defineutils.defineview.__main__:run"
+
 [tool.setuptools]
 packages = ["defineutils", "defineutils.definehtml", "defineutils.validate", "defineutils.definepp",
-            "defineutils.definerefs", "defineutils.metrics"]
+            "defineutils.definerefs", "defineutils.metrics", "defineutils.defineview"]
 
 [tool.setuptools.package-data]
 # Include non-Python files needed at runtime (schemas, XSL)

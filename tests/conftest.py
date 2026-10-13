@@ -18,7 +18,11 @@ COMMANDS = {"definehtml": "defineutils.definehtml",
             "definevalidate": "defineutils.validate",
             "definepp": "defineutils.definepp",
             "definerefs": "defineutils.definerefs",
-            "definemetrics": "defineutils.metrics"}
+            "definemetrics": "defineutils.metrics",
+            "defineview": "defineutils.defineview"}
+
+# a command that waits on a message box, which no one can close in CI, fails rather than hanging the run
+CLI_TIMEOUT = 120
 
 
 @pytest.fixture
@@ -43,9 +47,13 @@ def cli_command():
 
 @pytest.fixture
 def run_cli(cli_command):
-    """returns run(name, *args): runs the named command from the repo root, capturing its output"""
-    def run(name: str, *args: str) -> subprocess.CompletedProcess:
-        return subprocess.run([*cli_command(name), *args], capture_output=True, cwd=str(DATA.parent))
+    """
+    returns run(name, *args, env=None): runs the named command from the repo root, capturing its output; env replaces
+    the environment, e.g. to point the temp folder elsewhere
+    """
+    def run(name: str, *args: str, env: dict = None) -> subprocess.CompletedProcess:
+        return subprocess.run([*cli_command(name), *args], capture_output=True, cwd=str(DATA.parent), env=env,
+                              timeout=CLI_TIMEOUT)
 
     return run
 
@@ -59,7 +67,7 @@ def run_module():
     """
     def run(name: str, *args: str) -> subprocess.CompletedProcess:
         return subprocess.run([sys.executable, "-X", "utf8", "-m", COMMANDS[name], *args], capture_output=True,
-                              cwd=str(DATA.parent))
+                              cwd=str(DATA.parent), timeout=CLI_TIMEOUT)
 
     return run
 

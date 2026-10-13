@@ -1,6 +1,8 @@
+import os
 import re
 from lxml import etree
 from pathlib import Path
+from urllib.parse import urljoin
 
 # the bundled Define-XML v2.1 stylesheet, a modified copy of Lex Jansen's define2-1.xsl (see
 # stylesheet_changes.md); module-level so a test can point the class at another stylesheet
@@ -26,10 +28,15 @@ class DefineHtmlGenerationError(Exception):
     pass
 
 
+class DefineHtmlWriteError(DefineHtmlGenerationError):
+    """the HTML could not be written to the destination given; the define.xml itself may render"""
+    pass
+
+
 class DefineHtml:
     def __init__(self, define_xml_file: Path, codelist_items: int = 5, methods_table: bool = True,
                  comments_table: bool = False, prefixes: bool = False,
-                 length_format: bool = False) -> None:
+                 length_format: bool = False, absolute_links: bool = False) -> None:
         """
         the stylesheet options default to the stylesheet's own defaults
         :param define_xml_file: Path to the Define-XML v2.1 file to render
@@ -41,11 +48,15 @@ class DefineHtml:
             [Origin]
         :param length_format: when True, the length column shows Length [Significant Digits] : Display
             Format rather than the display format or the length alone
+        :param absolute_links: when True, each relative link (a dataset, a document) is resolved
+            against the define.xml's folder and written as a file: URL, so HTML saved in another
+            folder still finds them
         """
         self.define = Path(define_xml_file)
         self._does_define_file_exist()
         self._params = self._stylesheet_params(codelist_items, methods_table, comments_table,
                                                prefixes, length_format)
+        self._absolute_links = absolute_links
         self.xslt = STYLESHEET
         self._transformer = self._load_stylesheet()
         self._result = None
@@ -73,16 +84,17 @@ class DefineHtml:
             with open(html_file, 'wb') as f:
                 f.write(html)
         except IsADirectoryError as e:
-            raise DefineHtmlGenerationError(f"Error attempting to write to a directory {html_file}.\n{e}") from e
+            raise DefineHtmlWriteError(f"Error attempting to write to a directory {html_file}.\n{e}") from e
         except PermissionError as e:
-            raise DefineHtmlGenerationError(f"Permission error attempting to write to {html_file}.\n{e}") from e
+            raise DefineHtmlWriteError(f"Permission error attempting to write to {html_file}.\n{e}") from e
         except OSError as e:
-            raise DefineHtmlGenerationError(f"Unable to write {html_file}.\n{e}") from e
+            raise DefineHtmlWriteError(f"Unable to write {html_file}.\n{e}") from e
 
     def _transform(self) -> etree._XSLTResultTree:
         """
-        parses the define.xml, confirms it is Define-XML v2.1, applies the stylesheet and reduces any
-        unsafe link to text; the result is cached so both output methods transform once
+        parses the define.xml, confirms it is Define-XML v2.1, applies the stylesheet, reduces any
+        unsafe link to text and, with absolute_links, resolves the relative links; the result is
+        cached so both output methods transform once
         :return: html result tree
         """
         if self._result is None:
@@ -93,6 +105,9 @@ class DefineHtml:
             except etree.XSLTApplyError as e:
                 raise DefineHtmlGenerationError(self._transform_error_message(e)) from e
             _neutralize_unsafe_links(result_tree)
+            if self._absolute_links:
+                # abspath, not resolve(): resolve() turns a mapped network drive into its UNC path
+                _absolutize_links(result_tree, Path(os.path.abspath(self.define)).parent)
             self._result = result_tree
         return self._result
 
@@ -176,16 +191,16 @@ class DefineHtml:
         """
         try:
             if html_file.exists() and html_file.samefile(self.define):
-                raise DefineHtmlGenerationError(
+                raise DefineHtmlWriteError(
                     f"The output file {html_file} is the input define.xml; writing the HTML there would "
                     f"overwrite it. Choose a different output file.")
             if html_file.is_dir():
-                raise DefineHtmlGenerationError(f"Error attempting to write to a directory {html_file}.")
+                raise DefineHtmlWriteError(f"Error attempting to write to a directory {html_file}.")
             if not html_file.parent.is_dir():
-                raise DefineHtmlGenerationError(
+                raise DefineHtmlWriteError(
                     f"The output directory {html_file.parent} does not exist or is not a directory.")
         except OSError as e:
-            raise DefineHtmlGenerationError(f"Unable to access the output file {html_file}.\n{e}") from e
+            raise DefineHtmlWriteError(f"Unable to access the output file {html_file}.\n{e}") from e
 
     @staticmethod
     def _stylesheet_params(codelist_items: int, methods_table: bool, comments_table: bool,
@@ -258,3 +273,26 @@ def _neutralize_unsafe_links(result_tree: etree._XSLTResultTree) -> None:
                 and not (link.tail or "").strip()):
             link.tail = (link.tail or "") + (icon.tail or "")
             link.getparent().remove(icon)
+
+
+def _absolutize_links(result_tree: etree._XSLTResultTree, folder: Path) -> None:
+    """
+    resolves each relative link against folder and writes it as a file: URL, keeping its fragment
+    (#page=12), so HTML saved away from the define.xml still finds its datasets and documents.
+    Links within the page (#IG.AE) and links with a scheme (https:, file:, C:) are left alone. A
+    <base> element can't do this: it would also send the page's own #fragment links to folder
+    :param result_tree: the HTML result tree, changed in place
+    :param folder: the absolute path of the define.xml's folder
+    """
+    root = result_tree.getroot()
+    if root is None:
+        return
+    base = folder.as_uri()
+    if not base.endswith("/"):
+        base += "/"
+    for link in root.iter("a"):
+        href = (link.get("href") or "").strip()
+        if not href or href.startswith("#") or _URL_SCHEME.match(_URL_IGNORED.sub("", href)):
+            continue
+        # browsers read \ as / in a file: URL's path, and urljoin does not
+        link.set("href", urljoin(base, href.replace("\\", "/")))

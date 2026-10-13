@@ -3,7 +3,7 @@
 Lists, checks or test-signs the files that Authenticode signing covers in the Windows bundle.
 
 .DESCRIPTION
-Signing covers every .exe, .dll and .pyd in <Dist>\defineutils that is not signed already: the five commands and
+Signing covers every .exe, .dll and .pyd in <Dist>\defineutils that is not signed already: the six commands and
 lxml's modules. Python's DLLs and the Microsoft runtime come signed by their publishers and keep those signatures.
 
   -Action List           writes those files to <Dist>\to-sign.txt, one path per line relative to <Dist>: the

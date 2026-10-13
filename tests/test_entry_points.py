@@ -1,4 +1,4 @@
-"""The defineutils commands: their console-script entry points, and the run() each one calls."""
+"""The defineutils commands: their console- and GUI-script entry points, and the run() each one calls."""
 import importlib
 import sys
 from importlib import metadata
@@ -7,12 +7,16 @@ import pytest
 
 from defineutils import __version__
 
-# each command, and the module holding the run() its console script calls
+# each command, and the module holding the run() its script calls
 ENTRY_MODULES = {"definehtml": "defineutils.definehtml.__main__",
                  "definevalidate": "defineutils.validate.__main__",
                  "definepp": "defineutils.definepp.__main__",
                  "definerefs": "defineutils.definerefs.__main__",
-                 "definemetrics": "defineutils.metrics.__main__"}
+                 "definemetrics": "defineutils.metrics.__main__",
+                 "defineview": "defineutils.defineview.__main__"}
+
+# the commands installed as GUI scripts, which on Windows start without a console window
+GUI_SCRIPTS = ["defineview"]
 
 # the commands that print a report to the console, so can meet a pager that quits early
 PAGED = ["definevalidate", "definepp", "definerefs", "definemetrics"]
@@ -33,11 +37,12 @@ def _cli(name: str, monkeypatch):
     return module
 
 
-def test_each_command_is_a_console_script_that_calls_run():
-    scripts = {ep.name: ep for ep in _installed().entry_points if ep.group == "console_scripts"}
+def test_each_command_is_a_console_or_gui_script_that_calls_run():
+    scripts = {ep.name: ep for ep in _installed().entry_points if ep.group in ("console_scripts", "gui_scripts")}
 
-    assert {name: ep.value for name, ep in scripts.items()} == \
-           {name: f"{module}:run" for name, module in ENTRY_MODULES.items()}, \
+    assert {name: (ep.group, ep.value) for name, ep in scripts.items()} == \
+           {name: ("gui_scripts" if name in GUI_SCRIPTS else "console_scripts", f"{module}:run")
+            for name, module in ENTRY_MODULES.items()}, \
            "the installed metadata is stale; re-run pip install -e ."
     for name, ep in scripts.items():
         assert ep.load() is importlib.import_module(ENTRY_MODULES[name]).run

@@ -1,18 +1,46 @@
 # -*- mode: python ; coding: utf-8 -*-
 """
-PyInstaller build definition for the defineutils executables: five one-folder console executables passed to one
-shared COLLECT, so they share a single _internal runtime folder. Build with packaging/build_executables.py, which also
-adds README.txt and LICENSES/ and zips the result.
+PyInstaller build definition for the defineutils executables: six one-folder executables passed to one shared COLLECT,
+so they share a single _internal runtime folder. Build with packaging/build_executables.py, which also adds README.txt
+and LICENSES/ and zips the result.
 
 A new data file or computed import in defineutils or a dependency must be added here, or the frozen build fails only
 when that code runs; the CI run of the tests against the executables is what catches it.
 """
 import os
+import re
+import sys
 
 from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 
-# each command is built from packaging/entry/<command>.py, which calls the run() its console script calls
-COMMANDS = ["definehtml", "definevalidate", "definepp", "definerefs", "definemetrics"]
+from defineutils import __version__
+
+# each command is built from packaging/entry/<command>.py, which calls the run() its console or GUI script calls
+COMMANDS = ["definehtml", "definevalidate", "definepp", "definerefs", "definemetrics", "defineview"]
+
+# defineview is what opening a define.xml with a double-click runs, so on Windows it is built windowed and no console
+# window opens; it shows its errors on a page or in a message box instead. Elsewhere it keeps the console bootloader
+WINDOWED = {"defineview"} if sys.platform == "win32" else set()
+
+# the Windows FileDescription, which Explorer's Properties show and "Open with" is expected to list the program by
+DESCRIPTIONS = {"defineview": "defineutils Define-XML viewer"}
+
+
+def version_resource(command):
+    """the command's Windows version resource, or None when it has no description or this isn't Windows"""
+    if sys.platform != "win32" or command not in DESCRIPTIONS:
+        return None
+    # imported here: versioninfo imports pefile, which PyInstaller installs only on Windows
+    from PyInstaller.utils.win32 import versioninfo
+    numbers = tuple(int(number) for number in re.match(r"(\d+)\.(\d+)\.(\d+)", __version__).groups()) + (0,)
+    strings = {"FileDescription": DESCRIPTIONS[command], "FileVersion": __version__, "InternalName": command,
+               "OriginalFilename": f"{command}.exe", "ProductName": "defineutils", "ProductVersion": __version__}
+    return versioninfo.VSVersionInfo(
+        ffi=versioninfo.FixedFileInfo(filevers=numbers, prodvers=numbers),
+        kids=[versioninfo.StringFileInfo([versioninfo.StringTable(
+                  "040904B0", [versioninfo.StringStruct(name, value) for name, value in strings.items()])]),
+              # US English, Unicode: the language and code page of the StringTable above
+              versioninfo.VarFileInfo([versioninfo.VarStruct("Translation", [0x0409, 1200])])])
 
 # defineutils loads its stylesheet and schemas via Path(__file__).parent, which a frozen module resolves inside
 # _internal/, so the files are collected at the same relative paths
@@ -41,8 +69,9 @@ for command in COMMANDS:
                         hiddenimports=hiddenimports, excludes=excludes, noarchive=True)
     pyz = PYZ(analysis.pure)
     # icon="NONE" leaves out PyInstaller's own icon
-    executable = EXE(pyz, analysis.scripts, options, exclude_binaries=True, name=command, console=True,
-                     icon="NONE", strip=False, upx=False)
+    executable = EXE(pyz, analysis.scripts, options, exclude_binaries=True, name=command,
+                     console=command not in WINDOWED, version=version_resource(command), icon="NONE", strip=False,
+                     upx=False)
     analyses.append(analysis)
     executables.append(executable)
 
