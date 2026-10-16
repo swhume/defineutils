@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from defineutils.conformance import DefineConformanceChecker, DefineConformanceLoadError
 from defineutils.definepp import DefinePrettyPrinter, DefinePrettyPrintError
 from defineutils.definerefs import DefineRefChecker, DefineRefCheckError
 from defineutils.metrics import DefineMetrics, DefineMetricsError
@@ -25,6 +26,9 @@ WRITERS = [
                  DefineMetricsError, id="metrics"),
     pytest.param("defineutils.validate.validate", lambda path: DefineSchemaValidator(DEFINE).validate_to_file(path),
                  DefineSchemaLoadError, id="validate"),
+    pytest.param("defineutils.conformance.conformance",
+                 lambda path: DefineConformanceChecker(DEFINE).check_to_file(path), DefineConformanceLoadError,
+                 id="conformance"),
 ]
 
 

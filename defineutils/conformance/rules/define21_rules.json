@@ -1,0 +1,3001 @@
+{
+ "source": "CDISC Define-XML v2.1 Conformance Rules",
+ "source_file": "Define-XML_v2.1_Conformance_Rules.xlsx",
+ "rules": [
+  {
+   "id": "1",
+   "plain_text": "Elements must be ordered in accordance with the global element ordering rules in the Define-XML specification.",
+   "rule": "//<element OID> is not allowed under [parent element]/@OID.",
+   "message": "Element [element]/@OID s not allowed under [parent element]/@OID.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [],
+   "element": "ALL elements",
+   "attribute": null
+  },
+  {
+   "id": "2",
+   "plain_text": "Element ODM must be provided in any Define-XML document.",
+   "rule": "/ODM must be provided.",
+   "message": "Element ODM is missing in the Define-XML document.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM"
+   ],
+   "element": "ODM",
+   "attribute": null
+  },
+  {
+   "id": "3",
+   "plain_text": "No more than one ODM element may be provided in the Define-XML document.",
+   "rule": "No more than one ODM element may be provided.",
+   "message": "Element ODM is provided more than once in the Define-XML document.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM"
+   ],
+   "element": "ODM",
+   "attribute": null
+  },
+  {
+   "id": "4",
+   "plain_text": "The value of attribute CreationDateTime must be in ISO 8601 datetime format.",
+   "rule": "The value of @CreationDateTime must be in ISO 8601 datetime format.",
+   "message": "The value of CreationDateTime[@CreationDateTime] is not in ISO 8601 datetime format.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM"
+   ],
+   "element": "ODM",
+   "attribute": "CreationDateTime"
+  },
+  {
+   "id": "5",
+   "plain_text": "The value of attribute AsOfDateTime must be in ISO 8601 datetime format.",
+   "rule": "The value of @AsOfDateTime must be in ISO 8601 datetime format.",
+   "message": "The value of AsOfDateTime[@AsOfDateTime] is not in ISO 8601 datetime format.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM"
+   ],
+   "element": "ODM",
+   "attribute": "AsOfDateTime"
+  },
+  {
+   "id": "6",
+   "plain_text": "Attribute ODMVersion must be provided for the ODM element.",
+   "rule": "@ODMVersion must be provided.",
+   "message": "Attribute ODMVersion is missing for element ODM.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM"
+   ],
+   "element": "ODM",
+   "attribute": "ODMVersion"
+  },
+  {
+   "id": "7",
+   "plain_text": "The value of the ODMVersion attribute must be \"1.3.2\"",
+   "rule": "The value of @ODMVersion must be \"1.3.2\".",
+   "message": "The value of ODMVersion[@ODMVersion] is not \"1.3.2\" for the ODM element .",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM"
+   ],
+   "element": "ODM",
+   "attribute": "ODMVersion"
+  },
+  {
+   "id": "8",
+   "plain_text": "The FileType attribute value must be \"Snapshot\"",
+   "rule": "@FileType must be \"Snapshot\".",
+   "message": "The value of ODM/@FileType must be \"Snapshot\".",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM"
+   ],
+   "element": "ODM",
+   "attribute": "FileType"
+  },
+  {
+   "id": "9",
+   "plain_text": "Attribute FileOID must be provided for the ODM element.",
+   "rule": "@FileOID must be provided.",
+   "message": "Attribute FileOID is missing for element ODM.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM"
+   ],
+   "element": "ODM",
+   "attribute": "FileOID"
+  },
+  {
+   "id": "10",
+   "plain_text": "Child element Study must be provided for the ODM element.",
+   "rule": "/ODM/Study must be provided.",
+   "message": "Child element Study is missing for element ODM.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study"
+   ],
+   "element": "Study",
+   "attribute": null
+  },
+  {
+   "id": "11",
+   "plain_text": "No more than one child element Study must be provided for the ODM element.",
+   "rule": "No more than one /ODM/Study must be provided.",
+   "message": "Child element Study is provided more than once for element ODM.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study"
+   ],
+   "element": "Study",
+   "attribute": null
+  },
+  {
+   "id": "12",
+   "plain_text": "Attribute OID must be provided for the Study element.",
+   "rule": "@OID must be provided.",
+   "message": "Attribute OID is missing for element Study.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study"
+   ],
+   "element": "Study",
+   "attribute": "OID"
+  },
+  {
+   "id": "13",
+   "plain_text": "Attribute CreationDateTime must be provided for the ODM element.",
+   "rule": "@CreationDateTime must be provided.",
+   "message": "Attribute CreationDateTime is missing for element ODM.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM"
+   ],
+   "element": "ODM",
+   "attribute": "CreationDateTime"
+  },
+  {
+   "id": "14",
+   "plain_text": "Child element GlobalVariables must be provided for the Study element.",
+   "rule": "//Study/GlobalVariables must be provided.",
+   "message": "Child element GlobalVariables is missing for element Study.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/GlobalVariables"
+   ],
+   "element": "GlobalVariables",
+   "attribute": null
+  },
+  {
+   "id": "15",
+   "plain_text": "No more than one child element GlobalVariables must be provided for the Study element.",
+   "rule": "No more than one //Study/GlobalVariables must be provided.",
+   "message": "Child element GlobalVariables is provided more than once for element Study.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/GlobalVariables"
+   ],
+   "element": "GlobalVariables",
+   "attribute": null
+  },
+  {
+   "id": "16",
+   "plain_text": "Attribute def:Context must be provided for the ODM element.",
+   "rule": "@def:Context must be provided.",
+   "message": "Attribute def:Context is missing for element ODM.",
+   "versions": "2.1 only",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM"
+   ],
+   "element": "ODM",
+   "attribute": "def:Context"
+  },
+  {
+   "id": "17",
+   "plain_text": "The value of the def:Context attribute must be one of \"Submission\", \"Other\".",
+   "rule": "The value of @def:Context must be one of \"Submission\", \"Other\".",
+   "message": "The value of def:Context[@def:Context] is not one of \"Submission\", \"Other\".",
+   "versions": "2.1 only",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM"
+   ],
+   "element": "ODM",
+   "attribute": "def:Context"
+  },
+  {
+   "id": "18",
+   "plain_text": "Child element StudyName must be provided for the GlobalVariables element.",
+   "rule": "//GlobalVariables/StudyName must be provided.",
+   "message": "Child element StudyName is missing for element GlobalVariables.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/GlobalVariables/StudyName"
+   ],
+   "element": "StudyName",
+   "attribute": null
+  },
+  {
+   "id": "19",
+   "plain_text": "No more than one child element StudyName must be provided for the GlobalVariables element.",
+   "rule": "No more than one //GlobalVariables/StudyName must be provided.",
+   "message": "Child element StudyName is provided more than once for element GlobalVariables.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/GlobalVariables/StudyName"
+   ],
+   "element": "StudyName",
+   "attribute": null
+  },
+  {
+   "id": "20",
+   "plain_text": "Child element StudyDescription must be provided for the GlobalVariables element.",
+   "rule": "//GlobalVariables/StudyDescription must be provided.",
+   "message": "Child element StudyDescription is missing for element GlobalVariables.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/GlobalVariables/StudyDescription"
+   ],
+   "element": "StudyDescription",
+   "attribute": null
+  },
+  {
+   "id": "21",
+   "plain_text": "No more than one child element StudyDescription must be provided for the GlobalVariables element.",
+   "rule": "No more than one //GlobalVariables/StudyDescription must be provided.",
+   "message": "Child element StudyDescription is provided more than once for element GlobalVariables.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/GlobalVariables/StudyDescription"
+   ],
+   "element": "StudyDescription",
+   "attribute": null
+  },
+  {
+   "id": "22",
+   "plain_text": "Child element ProtocolName must be provided for the GlobalVariables element.",
+   "rule": "//GlobalVariables/ProtocolName must be provided.",
+   "message": "Child element ProtocolName is missing for element GlobalVariables.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/GlobalVariables/ProtocolName"
+   ],
+   "element": "ProtocolName",
+   "attribute": null
+  },
+  {
+   "id": "23",
+   "plain_text": "No more than one child element ProtocolName must be provided for the GlobalVariables element.",
+   "rule": "No more than one //GlobalVariables/ProtocolName must be provided.",
+   "message": "Child element ProtocolName is provided more than once for element GlobalVariables.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/GlobalVariables/ProtocolName"
+   ],
+   "element": "ProtocolName",
+   "attribute": null
+  },
+  {
+   "id": "24",
+   "plain_text": "Child element MetaDataVersion must be provided for the Study element.",
+   "rule": "//Study/MetaDataVersion must be provided.",
+   "message": "Child element MetaDataVersion is missing for element Study.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion"
+   ],
+   "element": "MetaDataVersion",
+   "attribute": null
+  },
+  {
+   "id": "25",
+   "plain_text": "No more than one child element MetaDataVersion must be provided for the Study element.",
+   "rule": "No more than one //Study/MetaDataVersion must be provided.",
+   "message": "Child element MetaDataVersion is provided more than once for element Study.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion"
+   ],
+   "element": "MetaDataVersion",
+   "attribute": null
+  },
+  {
+   "id": "26",
+   "plain_text": "Attribute OID must be provided for the MetaDataVersion element.",
+   "rule": "@OID must be provided.",
+   "message": "Attribute OID is missing for element MetaDataVersion.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion"
+   ],
+   "element": "MetaDataVersion",
+   "attribute": "OID"
+  },
+  {
+   "id": "27",
+   "plain_text": "Attribute Name must be provided for the MetaDataVersion element.",
+   "rule": "@Name must be provided.",
+   "message": "Attribute Name is missing for element MetaDataVersion.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion"
+   ],
+   "element": "MetaDataVersion",
+   "attribute": "Name"
+  },
+  {
+   "id": "28",
+   "plain_text": "The value of the def:DefineVersion attribute must be \"2.0.0\" or match \"2.1.<n>\" (e.g., \"2.1.0\").",
+   "rule": "The value of @def:DefineVersion must be \"2.0.0\" or match \"2.1.<n>\".",
+   "message": "The value of MetaDataVersion@def:DefineVersion] is neither \"2.0.0\" nor matches \"2.1.<n>\".",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion"
+   ],
+   "element": "MetaDataVersion",
+   "attribute": "def:DefineVersion"
+  },
+  {
+   "id": "29",
+   "plain_text": "Attribute def:DefineVersion must be provided for the MetaDataVersion element.",
+   "rule": "@def:DefineVersion must be provided.",
+   "message": "Attribute def:DefineVersion is missing for element MetaDataVersion.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion"
+   ],
+   "element": "MetaDataVersion",
+   "attribute": "def:DefineVersion"
+  },
+  {
+   "id": "30",
+   "plain_text": "The def:CommentOID attribute on the MetaDataVersion element must reference an existing def:CommentDef element.",
+   "rule": "A def:CommentDef element must exist with def:CommentDef/@OID = //MetaDataVersion /@def:CommentOID.",
+   "message": "There is no def:CommentDef with an OID attribute that matches MetaDataVersion [@Name]/def:CommentOID.",
+   "versions": "2.1 only",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion"
+   ],
+   "element": "MetaDataVersion",
+   "attribute": "def:CommentOID"
+  },
+  {
+   "id": "31",
+   "plain_text": "Child element def:Standards must be provided for the MetaDataVersion element in the context of a submission.",
+   "rule": "//MetaDataVersion/def:Standards must be provided when ODM/@def:Context='Submission'.",
+   "message": "Child element def:Standards is missing for element MetaDataVersion when @def:Context='Submission'.",
+   "versions": "2.1 only",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/def:Standards"
+   ],
+   "element": "def:Standards",
+   "attribute": null
+  },
+  {
+   "id": "32",
+   "plain_text": "No more than one child element def:Standards must be provided for the MetaDataVersion element.",
+   "rule": "No more than one //MetaDataVersion/def:Standards must be provided.",
+   "message": "Child element def:Standards is provided more than once for element MetaDataVersion.",
+   "versions": "2.1 only",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/def:Standards"
+   ],
+   "element": "def:Standards",
+   "attribute": null
+  },
+  {
+   "id": "33",
+   "plain_text": "Attribute Name must be provided for the def:Standard element.",
+   "rule": "@Name must be provided.",
+   "message": "Attribute Name is missing for element def:Standard[@OID].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/def:Standards/def:Standard"
+   ],
+   "element": "def:Standard",
+   "attribute": "Name"
+  },
+  {
+   "id": "34",
+   "plain_text": "Attribute Type must be provided for the def:Standard element.",
+   "rule": "@Type must be provided.",
+   "message": "Attribute Type is missing for def:Standard[@Name].",
+   "versions": "2.1 only",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/def:Standards/def:Standard"
+   ],
+   "element": "def:Standard",
+   "attribute": "Type"
+  },
+  {
+   "id": "35",
+   "plain_text": "Attribute PublishingSet must be provided for the def:Standard element when Type is \"CT\".",
+   "rule": "@PublishingSet must be provided when @Type=\"CT\".",
+   "message": "Attribute PublishingSet is missing for def:Standard[@Name] with @Type='CT'.",
+   "versions": "2.1 only",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/def:Standards/def:Standard"
+   ],
+   "element": "def:Standard",
+   "attribute": "PublishingSet"
+  },
+  {
+   "id": "36",
+   "plain_text": "Attribute Version must be provided for the def:Standard element.",
+   "rule": "@Version must be provided.",
+   "message": "Attribute Version is missing for def:Standard[@Name].",
+   "versions": "2.1 only",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/def:Standards/def:Standard"
+   ],
+   "element": "def:Standard",
+   "attribute": "Version"
+  },
+  {
+   "id": "38",
+   "plain_text": "No more than one child element def:AnnotatedCRF must be provided for the MetaDataVersion element.",
+   "rule": "No more than one //MetaDataVersion/def:AnnotatedCRF must be provided.",
+   "message": "Child element def:AnnotatedCRF is provided more than once for element MetaDataVersion.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/def:AnnotatedCRF"
+   ],
+   "element": "def:AnnotatedCRF",
+   "attribute": null
+  },
+  {
+   "id": "39",
+   "plain_text": "Child element def:DocumentRef must be provided for the def:AnnotatedCRF element.",
+   "rule": "//def:AnnotatedCRF/def:DocumentRef must be provided.",
+   "message": "Child element def:DocumentRef is missing for element def:AnnotatedCRF.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/def:AnnotatedCRF/def:DocumentRef"
+   ],
+   "element": "def:AnnotatedCRF/def:DocumentRef",
+   "attribute": null
+  },
+  {
+   "id": "42",
+   "plain_text": "Attribute leafID must be provided for the def:DocumentRef element.",
+   "rule": "@leafID must be provided.",
+   "message": "Attribute leafID is missing for element def:DocumentRef.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/def:SupplementalDoc/def:DocumentRef"
+   ],
+   "element": "def:DocumentRef",
+   "attribute": "leafID"
+  },
+  {
+   "id": "43",
+   "plain_text": "The leafID attribute on the def:DocumentRef element must reference an existing def:leaf element within the Define-XML document.",
+   "rule": "Missing def:leaf[@ID=def:DocumentRef/@leafID].",
+   "message": "def:leaf element corresponding to def:DocumentRef/@leafD  is missing.",
+   "versions": "2.1 only",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef"
+   ],
+   "element": "def:DocumentRef",
+   "attribute": "leafID"
+  },
+  {
+   "id": "44",
+   "plain_text": "The def:PDFPageRef element must be provided when the Origin Type is 'Collected' and the Source is 'Investigator' or 'Subject'.",
+   "rule": "def:PDFPageRef element must be provided when the //def:Origin/@Type='Collected' and //def:Origin/@Source in ('Investigator', 'Subject').",
+   "message": "Element def:PDFPageRef is missing for //ItemDef[@OID]/def:Origin[@Type='Collected',@Source in 'Investigator','Source']/def:DocumentRef.",
+   "versions": "2.1 only",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemDef/def:Origin/def:DocumentRef/def:PDFPageRef"
+   ],
+   "element": "def:PDFPageRef",
+   "attribute": null
+  },
+  {
+   "id": "45",
+   "plain_text": "The value of the Type attribute must be one of \"PhysicalRef\", \"NamedDestination\".",
+   "rule": "The value of @Type must be one of \"PhysicalRef\", \"NamedDestination\".",
+   "message": "The value of Type[@Type] is not one of \"PhysicalRef\", \"NamedDestination\" for def:DocumentRef[@leafID]/def:PDFPageRef.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemDef/def:Origin/def:DocumentRef/def:PDFPageRef",
+    "/ODM/Study/MetaDataVersion/MethodDef/def:DocumentRef/def:PDFPageRef",
+    "/ODM/Study/MetaDataVersion/def:CommentDef/def:DocumentRef/def:PDFPageRef"
+   ],
+   "element": "def:PDFPageRef",
+   "attribute": "Type"
+  },
+  {
+   "id": "46",
+   "plain_text": "Attribute Type must be provided for the def:PDFPageRef element.",
+   "rule": "@Type must be provided.",
+   "message": "Attribute Type is missing for element def:PDFPageRef.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemDef/def:Origin/def:DocumentRef/def:PDFPageRef",
+    "/ODM/Study/MetaDataVersion/MethodDef/def:DocumentRef/def:PDFPageRef",
+    "/ODM/Study/MetaDataVersion/def:CommentDef/def:DocumentRef/def:PDFPageRef"
+   ],
+   "element": "def:PDFPageRef",
+   "attribute": "Type"
+  },
+  {
+   "id": "47",
+   "plain_text": "The value of attribute FirstPage must be an integer number.",
+   "rule": "The value of @FirstPage must be an integer number.",
+   "message": "The value of attribute FirstPage[@FirstPage] is not an integer number.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemDef/def:Origin/def:DocumentRef/def:PDFPageRef",
+    "/ODM/Study/MetaDataVersion/MethodDef/def:DocumentRef/def:PDFPageRef",
+    "/ODM/Study/MetaDataVersion/def:CommentDef/def:DocumentRef/def:PDFPageRef"
+   ],
+   "element": "def:PDFPageRef",
+   "attribute": "FirstPage"
+  },
+  {
+   "id": "48",
+   "plain_text": "Attribute FirstPage must be provided for the def:PDFPageRef element when PageRefs is missing and Type is PhysicalRef.",
+   "rule": "@FirstPage must be provided when //def:PDFPageRef/@PageRefs is missing and //def:PDFPageRef/@Type=\"PhysicalRef\".",
+   "message": "Attribute FirstPage is missing for element def:PDFPageRef, when attribute PageRefs is missing and Type is PhysicalRef.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemDef/def:Origin/def:DocumentRef/def:PDFPageRef",
+    "/ODM/Study/MetaDataVersion/MethodDef/def:DocumentRef/def:PDFPageRef",
+    "/ODM/Study/MetaDataVersion/def:CommentDef/def:DocumentRef/def:PDFPageRef"
+   ],
+   "element": "def:PDFPageRef",
+   "attribute": "FirstPage"
+  },
+  {
+   "id": "49",
+   "plain_text": "The value of attribute LastPage must be an integer number.",
+   "rule": "The value of @LastPage must be an integer number.",
+   "message": "The value of attribute LastPage[@LastPage] is not an integer number.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemDef/def:Origin/def:DocumentRef/def:PDFPageRef",
+    "/ODM/Study/MetaDataVersion/MethodDef/def:DocumentRef/def:PDFPageRef",
+    "/ODM/Study/MetaDataVersion/def:CommentDef/def:DocumentRef/def:PDFPageRef"
+   ],
+   "element": "def:PDFPageRef",
+   "attribute": "LastPage"
+  },
+  {
+   "id": "50",
+   "plain_text": "Attribute LastPage must be provided for the def:PDFPageRef element when PageRefs is missing and Type is PhysicalRef.",
+   "rule": "@LastPage must be provided when //def:PDFPageRef/@PageRefs is missing and //def:PDFPageRef/@Type=\"PhysicalRef\".",
+   "message": "Attribute LastPage is missing for element def:PDFPageRef, when attribute PageRefs is missing and Type is PhysicalRef.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemDef/def:Origin/def:DocumentRef/def:PDFPageRef",
+    "/ODM/Study/MetaDataVersion/MethodDef/def:DocumentRef/def:PDFPageRef",
+    "/ODM/Study/MetaDataVersion/def:CommentDef/def:DocumentRef/def:PDFPageRef"
+   ],
+   "element": "def:PDFPageRef",
+   "attribute": "LastPage"
+  },
+  {
+   "id": "51",
+   "plain_text": "No more than one child element def:SupplementalDoc must be provided for the MetaDataVersion element.",
+   "rule": "No more than one //MetaDataVersion/def:SupplementalDoc must be provided.",
+   "message": "Child element def:SupplementalDoc is provided more than once for element MetaDataVersion.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/def:SupplementalDoc"
+   ],
+   "element": "def:SupplementalDoc",
+   "attribute": null
+  },
+  {
+   "id": "54",
+   "plain_text": "Child element def:DocumentRef must be provided for the def:SupplementalDoc element.",
+   "rule": "//def:SupplementalDoc/def:DocumentRef must be provided.",
+   "message": "Child element def:DocumentRef is missing for element def:SupplementalDoc.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/def:AnnotatedCRF/def:DocumentRef"
+   ],
+   "element": "def:SupplementalDoc/def:DocumentRef",
+   "attribute": null
+  },
+  {
+   "id": "55",
+   "plain_text": "The QVAL variable in a Supplemental Qualifier dataset must have a def:ValueListRef element.",
+   "rule": "def:ValueListRef must be provided for //ItemDef[@OID, @Name=\"QVAL'].",
+   "message": "def:ValueListRef is missing for //ItemDef[@OID, @Name=\"QVAL'].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/def:ValueListDef"
+   ],
+   "element": "def:ValueListDef",
+   "attribute": null
+  },
+  {
+   "id": "56",
+   "plain_text": "A description must be provided for each method.",
+   "rule": "The Description element must be provided for each MethodDef element.",
+   "message": "A description is missing for MethodDef[@Name]",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/MethodDef/Description"
+   ],
+   "element": "Description",
+   "attribute": null
+  },
+  {
+   "id": "57",
+   "plain_text": "For non-standard domains or datasets, sponsors must provide a short ItemGroupDef description of the type of data contained within the dataset.",
+   "rule": "ItemGroupDef/Description must be provided when the @def:IsNonStandard attribute has the value 'Yes'.",
+   "message": "Missing Description for nonstandard dataset ItemGroupDef[@Name].",
+   "versions": "2.1 only",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef/Description"
+   ],
+   "element": "Description",
+   "attribute": null
+  },
+  {
+   "id": "60",
+   "plain_text": "Child element TranslatedText must be provided for the Description element.",
+   "rule": "//Description/TranslatedText must be provided.",
+   "message": "Child element TranslatedText is missing for element $ParentElement[@OID]/Description.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/def:ValueListDef/Description/TranslatedText",
+    "/ODM/Study/MetaDataVersion/ItemGroupDef/Description/TranslatedText",
+    "/ODM/Study/MetaDataVersion/ItemDef/Description/TranslatedText",
+    "/ODM/Study/MetaDataVersion/ItemDef/def:Origin/Description/TranslatedText",
+    "/ODM/Study/MetaDataVersion/CodeList/Description/TranslatedText",
+    "/ODM/Study/MetaDataVersion/CodeList/CodeListItem/Description/TranslatedText",
+    "/ODM/Study/MetaDataVersion/CodeList/EnumeratedItem/Description/TranslatedText",
+    "/ODM/Study/MetaDataVersion/MethodDef/Description/TranslatedText",
+    "/ODM/Study/MetaDataVersion/def:CommentDef/Description/TranslatedText"
+   ],
+   "element": "Description/TranslatedText",
+   "attribute": null
+  },
+  {
+   "id": "61",
+   "plain_text": "The Description element must have at least one TranslatedText child element",
+   "rule": "The Description element must have at least one TranslatedText child element.",
+   "message": "XPATH/Description/TranslatedText not found.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/def:ValueListDef/Description/TranslatedText",
+    "/ODM/Study/MetaDataVersion/ItemGroupDef/Description/TranslatedText",
+    "/ODM/Study/MetaDataVersion/ItemDef/Description/TranslatedText",
+    "/ODM/Study/MetaDataVersion/ItemDef/def:Origin/Description/TranslatedText",
+    "/ODM/Study/MetaDataVersion/CodeList/CodeListItem/Decode/TranslatedText",
+    "/ODM/Study/MetaDataVersion/CodeList/Description/TranslatedText",
+    "/ODM/Study/MetaDataVersion/CodeList/CodeListItem/Description/TranslatedText",
+    "/ODM/Study/MetaDataVersion/MethodDef/Description/TranslatedText",
+    "/ODM/Study/MetaDataVersion/def:CommentDef/Description/TranslatedText"
+   ],
+   "element": "TranslatedText",
+   "attribute": null
+  },
+  {
+   "id": "62",
+   "plain_text": "Each Decode element must have at least one TranslatedText child element.",
+   "rule": "Each Decode element must have at least one TranslatedText child element.",
+   "message": "Codelist/CodeListItem/Decode/TranslatedText not found.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/CodeList/CodeListItem/Decode/TranslatedText"
+   ],
+   "element": "TranslatedText",
+   "attribute": null
+  },
+  {
+   "id": "63",
+   "plain_text": "The xml:lang attribute value must be unique within the TranslatedText element.",
+   "rule": "@xml:lang must be unique within the TranslatedText element.",
+   "message": "//TranslatedText/@xml:lang is not unique.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "ODM/Study/MetaDataVersion/def:ValueListDef/Description/TranslatedText",
+    "/ODM/Study/MetaDataVersion/ItemGroupDef/Description/TranslatedText",
+    "/ODM/Study/MetaDataVersion/ItemDef/Description/TranslatedText",
+    "/ODM/Study/MetaDataVersion/ItemDef/def:Origin/Description/TranslatedText",
+    "/ODM/Study/MetaDataVersion/CodeList/CodeListItem/Decode/TranslatedText",
+    "/ODM/Study/MetaDataVersion/CodeList/Description/TranslatedText",
+    "/ODM/Study/MetaDataVersion/CodeList/CodeListItem/Description/TranslatedText",
+    "/ODM/Study/MetaDataVersion/CodeList/EnumeratedItem/Description/TranslatedText",
+    "/ODM/Study/MetaDataVersion/MethodDef/Description/TranslatedText",
+    "/ODM/Study/MetaDataVersion/def:CommentDef/Description/TranslatedText"
+   ],
+   "element": "TranslatedText",
+   "attribute": "xml:lang"
+  },
+  {
+   "id": "65",
+   "plain_text": "The ItemOID attribute on the ItemRef element must reference an existing ItemDef element.",
+   "rule": "A ItemDef element must exist with ItemDef/@OID = //ItemRef/@ItemOID.",
+   "message": "There is no ItemDef with an OID attribute that matches $ParentElement[@OID]/ItemRef/ItemOID.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef/ItemRef",
+    "/ODM/Study/MetaDataVersion/def:ValueListDef/ItemRef"
+   ],
+   "element": "ItemRef",
+   "attribute": "ItemOID"
+  },
+  {
+   "id": "66",
+   "plain_text": "The value of attribute OrderNumber must be an integer number.",
+   "rule": "The value of @OrderNumber must be an integer number.",
+   "message": "The value of attribute OrderNumber[@OrderNumber] is not an integer number for $ParentItemGroupDef[@Name]/ItemRef[@ItemOID].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef/ItemRef",
+    "/ODM/Study/MetaDataVersion/def:ValueListDef/ItemRef"
+   ],
+   "element": "ItemRef",
+   "attribute": "OrderNumber"
+  },
+  {
+   "id": "67",
+   "plain_text": "Mandatory attribute for the ItemRef corresponding to a SENDIG or SDTMIG variable with Core = \"Req\" must be \"Yes\".",
+   "rule": "@Mandatory must be 'Yes' when the parent ItemGroupDef references a def:Standard/@Name beginning with 'SDTM' or 'SEND' and the variable's Core attribute is 'Req'.",
+   "message": "ItemGroupDef/ItemRef[@ItemOID] must have @Mandatory = \"Yes\" because ItemDef[@Name] has Core = \"Req\" in def:Standard[ItemDef[@def:StandardOID]/@Name - def:Standard[ItemDef[@def:StandardOID]/@Version.",
+   "versions": "2.1 only",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef/ItemRef",
+    "/ODM/Study/MetaDataVersion/def:ValueListDef/ItemRef"
+   ],
+   "element": "ItemRef",
+   "attribute": "Mandatory"
+  },
+  {
+   "id": "68",
+   "plain_text": "The value of the Mandatory attribute must be one of \"Yes\", \"No\".",
+   "rule": "The value of @Mandatory must be one of \"Yes\", \"No\".",
+   "message": "The value of Mandatory[@Mandatory] is not one of \"Yes\", \"No\" for ItemGroupDef[@Name]/ItemRef[@ItemOID] ( or def:ValueListDef[@OID]/ItemRef[@ItemOID]).",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef/ItemRef",
+    "/ODM/Study/MetaDataVersion/def:ValueListDef/ItemRef"
+   ],
+   "element": "ItemRef",
+   "attribute": "Mandatory"
+  },
+  {
+   "id": "69",
+   "plain_text": "Attribute Mandatory must be provided for the ItemRef element.",
+   "rule": "@Mandatory must be provided.",
+   "message": "Attribute Mandatory is missing for element ItemRef[@ItemOID] in ItemGroupDef[@Name].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef/ItemRef",
+    "/ODM/Study/MetaDataVersion/def:ValueListDef/ItemRef"
+   ],
+   "element": "ItemRef",
+   "attribute": "Mandatory"
+  },
+  {
+   "id": "70",
+   "plain_text": "There must be at least one KeySequence attribute value in ItemGroupDef/ItemRef in the context of a submission.",
+   "rule": "count(//ItemGroupDef[@OID]/ItemRef/@KeySequence) must be >= 1 when ODM/@def:Context='Submission'.",
+   "message": "There must be at least one ItemRef with a KeySequence attribute in ItemGroupDef[@Name] when ODM/@def:Context='Submission'..",
+   "versions": "2.1 only",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef/ItemRef"
+   ],
+   "element": "ItemRef",
+   "attribute": "KeySequence"
+  },
+  {
+   "id": "71",
+   "plain_text": "KeySequence attribute values in ItemGroupDef must be unique.",
+   "rule": "@KeySequence values must be unique within ItemGroupDef[@Name].",
+   "message": "KeySequence attribute has non-unique values  in ItemGroupDef[@Name].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef/ItemRef"
+   ],
+   "element": "ItemRef",
+   "attribute": "KeySequence"
+  },
+  {
+   "id": "72",
+   "plain_text": "The value of attribute KeySequence must be an integer number.",
+   "rule": "The value of @KeySequence must be an integer number.",
+   "message": "The value of attribute KeySequence[@KeySequence] is not an integer number for $ParentItemGroupDef[@Name]/ItemRef[@ItemOID].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef/ItemRef"
+   ],
+   "element": "ItemRef",
+   "attribute": "KeySequence"
+  },
+  {
+   "id": "73",
+   "plain_text": "The MethodOID attribute must be provided on the  ItemRef element when the Origin Type attribute on the corresponding ItemDef element is \"Derived\".",
+   "rule": "@MethodOID must be provided when ItemDef[@OID]/def:Origin/@Type='Derived'.",
+   "message": "ItemRef[@ItemOID] is missing the MethodOID when ItemDef[@OID]/@Name variable has def:Origin/@Type  = \"Derived\".",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef/ItemRef",
+    "/ODM/Study/MetaDataVersion/def:ValueListDef/ItemRef"
+   ],
+   "element": "ItemRef",
+   "attribute": "MethodOID"
+  },
+  {
+   "id": "74",
+   "plain_text": "The MethodOID attribute on the ItemRef element must reference an existing MethodDef element.",
+   "rule": "A MethodDef element must exist with MethodDef/@OID = //ItemRef/@MethodOID.",
+   "message": "There is no MethodDef with an OID attribute that matches ItemRef/@MethodOID.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef/ItemRef",
+    "/ODM/Study/MetaDataVersion/def:ValueListDef/ItemRef"
+   ],
+   "element": "ItemRef",
+   "attribute": "MethodOID"
+  },
+  {
+   "id": "75",
+   "plain_text": "The value of the def:IsNonStandard attribute must be \"Yes\".",
+   "rule": "The value of @def:IsNonStandard must be \"Yes\".",
+   "message": "The value of def:IsNonStandard[@def:IsNonStandard] is not \"Yes\" for ItemGroupDef[@Name]/ItemRef[@ItemOID] ( or def:ValueListDef[@OID]/ItemRef[@ItemOID]).",
+   "versions": "2.1 only",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef/ItemRef",
+    "/ODM/Study/MetaDataVersion/def:ValueListDef/ItemRef"
+   ],
+   "element": "ItemRef",
+   "attribute": "def:IsNonStandard"
+  },
+  {
+   "id": "76",
+   "plain_text": "Attribute def:HasNoData must be provided for the ItemRef element when the dataset variable or value defined in the associated ItemDef has no data values",
+   "rule": "@def:HasNoData must be provided for the ItemRef element when the dataset variable or value defined in the associated //ItemDef[@OID=ItemRef/@ItemOID] has no data values",
+   "message": "Attribute def:HasNoData is missing for element ItemRef when associated ItemDef[@Name] has no data values",
+   "versions": "2.1 only",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef/ItemRef",
+    "/ODM/Study/MetaDataVersion/def:ValueListDef/ItemRef"
+   ],
+   "element": "ItemRef",
+   "attribute": "def:HasNoData"
+  },
+  {
+   "id": "77",
+   "plain_text": "The value of the def:HasNoData attribute must be \"Yes\".",
+   "rule": "The value of @def:HasNoData must be \"Yes\".",
+   "message": "The value of def:HasNoData[@def:HasNoData] is not \"Yes\" for ItemGroupDef[@Name]/ItemRef[@ItemOID] ( or def:ValueListDef[@OID]/ItemRef[@ItemOID]).",
+   "versions": "2.1 only",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef/ItemRef",
+    "/ODM/Study/MetaDataVersion/def:ValueListDef/ItemRef"
+   ],
+   "element": "ItemRef",
+   "attribute": "def:HasNoData"
+  },
+  {
+   "id": "79",
+   "plain_text": "The def:WhereClauseDef child element for  ItemRef is permitted only for def:ValueListDef/[@OID]/ItemRef.",
+   "rule": "def:WhereClauseDef child element found for ItemGroupDef/ItemRef. It is permitted only for def:ValueListDef/ItemRef elements.",
+   "message": "ItemGroupDef[@OID]/ItemRef[@ItemOID] has a def:WhereClauseDef child element.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef/ItemRef"
+   ],
+   "element": "ItemRef",
+   "attribute": null
+  },
+  {
+   "id": "80",
+   "plain_text": "Attribute WhereClauseOID must be provided for the def:WhereClauseRef element.",
+   "rule": "@WhereClauseOID must be provided.",
+   "message": "Attribute WhereClauseOID is missing for element def:WhereClauseRef in ItemGroupDef[@Name]/ItemRef[@ItemOID].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/def:ValueListDef/ItemRef/def:WhereClauseRef"
+   ],
+   "element": "def:WhereClauseRef",
+   "attribute": "WhereClauseOID"
+  },
+  {
+   "id": "81",
+   "plain_text": "The WhereClauseOID attribute on the def:WhereClauseRef element must reference an existing def:WhereClauseDef element.",
+   "rule": "A def:WhereClauseDef element must exist with def:WhereClauseDef/@OID = //def:WhereClauseRef/@WhereClauseOID.",
+   "message": "There is no def:WhereClauseDef with an OID attribute that matches def:WhereClauseRef/WhereClauseOID.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/def:ValueListDef/ItemRef/def:WhereClauseRef"
+   ],
+   "element": "def:WhereClauseRef",
+   "attribute": "WhereClauseOID"
+  },
+  {
+   "id": "82",
+   "plain_text": "Attribute OID must be provided for the def:WhereClauseDef element.",
+   "rule": "@OID must be provided.",
+   "message": "Attribute OID is missing for element def:WhereClauseDef.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/def:WhereClauseDef"
+   ],
+   "element": "def:WhereClauseDef",
+   "attribute": "OID"
+  },
+  {
+   "id": "83",
+   "plain_text": "The def:CommentOID attribute on the def:WhereClauseDef element must reference an existing def:CommentDef element.",
+   "rule": "A def:CommentDef element must exist with def:CommentDef/@OID = //def:WhereClauseDef/@CommentOID.",
+   "message": "There is no def:CommentDef with an OID attribute that matches def:WhereClauseDef/def:CommentOID.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/def:WhereClauseDef"
+   ],
+   "element": "def:WhereClauseDef",
+   "attribute": "def:CommentOID"
+  },
+  {
+   "id": "84",
+   "plain_text": "Comment must be provided for a where clause when two or more datasets are referenced in where clause conditions.",
+   "rule": "@def:CommentOID must be provided, when //def:WhereClauseDef/RangeCheck/@def:ItemOID references items from different ItemGroupDefs.",
+   "message": "Comment is not provided for WhereClauseDef which references more than one dataset.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/def:WhereClauseDef"
+   ],
+   "element": "def:WhereClauseDef",
+   "attribute": "def:CommentOID"
+  },
+  {
+   "id": "85",
+   "plain_text": "Child element RangeCheck must be provided for the def:WhereClauseDef element.",
+   "rule": "//def:WhereClauseDef/RangeCheck  must be provided.",
+   "message": "Child element RangeCheck is missing for element def:WhereClauseDef[@OID].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/def:WhereClauseDef/RangeCheck"
+   ],
+   "element": "RangeCheck",
+   "attribute": null
+  },
+  {
+   "id": "86",
+   "plain_text": "The value of the Comparator attribute must be one of \"LT\",\"LE\",\"GT\",\"GE\",\"EQ\", \"NE\",\"IN\",\"NOTIN\".",
+   "rule": "The value of @Comparator must be one of \"LT\",\"LE\",\"GT\",\"GE\",\"EQ\", \"NE\",\"IN\",\"NOTIN\".",
+   "message": "The value of Comparator[@Comparator] is not one of \"LT\",\"LE\",\"GT\",\"GE\",\"EQ\", \"NE\",\"IN\",\"NOTIN\" for VLM record ItemGroupDef[@Name].ItemDef[@Name].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/def:WhereClauseDef/RangeCheck"
+   ],
+   "element": "RangeCheck",
+   "attribute": "Comparator"
+  },
+  {
+   "id": "87",
+   "plain_text": "Attribute Comparator must be provided for the RangeCheck element.",
+   "rule": "@Comparator must be provided.",
+   "message": "Attribute Comparator is missing for def:WhereClauseDef[@OID]/RangeCheck.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/def:WhereClauseDef/RangeCheck"
+   ],
+   "element": "RangeCheck",
+   "attribute": "Comparator"
+  },
+  {
+   "id": "88",
+   "plain_text": "The value of the SoftHard attribute must be one of \"Soft\", \"Hard\".",
+   "rule": "The value of @SoftHard must be one of \"Soft\", \"Hard\".",
+   "message": "The value of SoftHard[@SoftHard] is not one of \"Soft\", \"Hard\" for def:WhereClauseDef[@OID].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/def:WhereClauseDef/RangeCheck"
+   ],
+   "element": "RangeCheck",
+   "attribute": "SoftHard"
+  },
+  {
+   "id": "89",
+   "plain_text": "Attribute SoftHard must be provided for the RangeCheck element.",
+   "rule": "@SoftHard must be provided.",
+   "message": "Attribute SoftHard is missing for def:WhereClauseDef[@OID]/RangeCheck.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/def:WhereClauseDef/RangeCheck"
+   ],
+   "element": "RangeCheck",
+   "attribute": "SoftHard"
+  },
+  {
+   "id": "90",
+   "plain_text": "Attribute def:ItemOID must be provided for the RangeCheck element.",
+   "rule": "@def:ItemOID must be provided.",
+   "message": "Attribute def:ItemOID is missing for def:WhereClauseDef[@OID]/RangeCheck.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/def:WhereClauseDef/RangeCheck"
+   ],
+   "element": "RangeCheck",
+   "attribute": "def:ItemOID"
+  },
+  {
+   "id": "91",
+   "plain_text": "RangeCheck must reference an existing ItemDef element.",
+   "rule": "An ItemDef element must exist with ItemDef/@OID=RangeCheck/@def:ItemOID.",
+   "message": "There is no ItemDef/@OID present that is referenced by RangeCheck within WhereClauseDef[@OID].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/def:WhereClauseDef/RangeCheck"
+   ],
+   "element": "RangeCheck",
+   "attribute": "def:ItemOID"
+  },
+  {
+   "id": "92",
+   "plain_text": "Child element CheckValue must be provided for the RangeCheck element.",
+   "rule": "//RangeCheck/CheckValue must be provided.",
+   "message": "Child element CheckValue is missing for element $ParentWhereClause[OID]/RangeCheck.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/def:WhereClauseDef/RangeCheck/CheckValue"
+   ],
+   "element": "CheckValue",
+   "attribute": null
+  },
+  {
+   "id": "93",
+   "plain_text": "Child element ItemGroupDef must be provided for the MetaDataVersion element in the context of a submission.",
+   "rule": "//MetaDataVersion/ItemGroupDef must be provided  when ODM/@def:Context='Submission'.",
+   "message": "Child element ItemGroupDef is missing for element MetaDataVersion  when @def:Context='Submission'.",
+   "versions": "2.1 only",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef"
+   ],
+   "element": "ItemGroupDef",
+   "attribute": null
+  },
+  {
+   "id": "94",
+   "plain_text": "Attribute OID must be provided for the ItemGroupDef element.",
+   "rule": "@OID must be provided.",
+   "message": "Attribute OID is missing for ItemGroupDef[@Name].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef"
+   ],
+   "element": "ItemGroupDef",
+   "attribute": "OID"
+  },
+  {
+   "id": "95",
+   "plain_text": "The Alias element is required for each ItemGroupDef where the Domain attribute value is not the same as the Name attribute value.",
+   "rule": "Alias must be provided for each ItemGroupDef when @Name is different from @Domain and @Domain is present.",
+   "message": "Domain attribute is not the same as the Name attribute but Alias is missing for ItemGroupDef[@Name].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef/Alias"
+   ],
+   "element": "Alias",
+   "attribute": null
+  },
+  {
+   "id": "96",
+   "plain_text": "Alias is Required for ItemGroupDef elements representing Supplemental Qualifier datasets in the context of a regulatory submission.",
+   "rule": "Alias must be provided for each ItemGroupDef where there are multiple ItemGroupDef elements with the same value for @Domain, ODM@Context= 'Submisson' and  the  @Name begins with 'SUPP' .",
+   "message": "Alias is missing for ItemGroupDef[@Name] representing Supplemental Qualifier datasets in the context of a regulatory submission.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef/Alias"
+   ],
+   "element": "Alias",
+   "attribute": null
+  },
+  {
+   "id": "97",
+   "plain_text": "Missing Alias for Codelist referenced by a variable that requires CDISC Controlled Terminology according to the standard.",
+   "rule": "Missing the Alias element for the Codelist element referenced by the ItemDef element for a standard variable that requires CDISC Controlled Terminology.",
+   "message": "Missing CodeList[@OID=<CodeListOID>]/Alias for ItemDef[@Name] where CDISC Controlled Terminology is required.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/CodeList/Alias",
+    "/ODM/Study/MetaDataVersion/CodeList/CodeListItem/Alias",
+    "/ODM/Study/MetaDataVersion/CodeList/EnumeratedItem/Alias"
+   ],
+   "element": "Alias",
+   "attribute": null
+  },
+  {
+   "id": "98",
+   "plain_text": "Missing Alias for Codelist EnumeratedItem element where the ExtendedValue attribute  is not present and the CodeList is referenced by a variable that requires CDISC Controlled Terminology according to the standard.",
+   "rule": "Missing the Alias element for //Codelist/EnumeratedItem  where EnumeratedItem/@defExtendedValue is not provided and CodeList/@OID is referenced by the ItemDef element for a standard variable that requires CDISC Controlled Terminology.",
+   "message": "Missing CodeList[@OID=<CodeListOID>]/EnumeratedItem[@CodedValue]/Alias for ItemDef[@Name] where CDISC Controlled Terminology is required.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/CodeList/EnumeratedItem/Alias"
+   ],
+   "element": "Alias",
+   "attribute": null
+  },
+  {
+   "id": "99",
+   "plain_text": "Missing Alias for Codelist CodedItem element where the ExtendedValue attribute  is not present and the Codelist is referenced by a variable that requires CDISC Controlled Terminology according to the standard.",
+   "rule": "Missing the Alias element for //Codelist/CodeListItem  where CodeListItem/@def:ExtendedValue is not present and CodeList/@OID is referenced by the ItemDef element for a standard variable that requires CDISC Controlled Terminology.",
+   "message": "Missing CodeList[@OID=<CodeListOID>]/CodeListItem[@CodedValue]/Alias for ItemDef[@Name] where CDISC Controlled Terminology is required.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/CodeList/CodeListItem/Alias"
+   ],
+   "element": "Alias",
+   "attribute": null
+  },
+  {
+   "id": "100",
+   "plain_text": "The Alias element must have a Context attribute.",
+   "rule": "@Context must be provided.",
+   "message": "$ParentElementType[@OID] must have Context attribute for the Alias element provided.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef/Alias",
+    "/ODM/Study/MetaDataVersion/ItemDef/Alias",
+    "/ODM/Study/MetaDataVersion/CodeList/Alias",
+    "/ODM/Study/MetaDataVersion/CodeList/CodeListItem/Alias",
+    "/ODM/Study/MetaDataVersion/CodeList/EnumeratedItem/Alias"
+   ],
+   "element": "Alias",
+   "attribute": "Context"
+  },
+  {
+   "id": "101",
+   "plain_text": "The Alias element must have a Name attribute.",
+   "rule": "@Name must be provided.",
+   "message": "$ParentElementType[@OID] must have a Name attribute for the Alias element provided.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef/Alias",
+    "/ODM/Study/MetaDataVersion/ItemDef/Alias",
+    "/ODM/Study/MetaDataVersion/CodeList/Alias",
+    "/ODM/Study/MetaDataVersion/CodeList/CodeListItem/Alias",
+    "/ODM/Study/MetaDataVersion/CodeList/EnumeratedItem/Alias"
+   ],
+   "element": "Alias",
+   "attribute": "Name"
+  },
+  {
+   "id": "104",
+   "plain_text": "Attribute Name must be provided for the ItemGroupDef element.",
+   "rule": "@Name must be provided.",
+   "message": "Attribute Name is missing for ItemGroupDef[@OID].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef"
+   ],
+   "element": "ItemGroupDef",
+   "attribute": "Name"
+  },
+  {
+   "id": "105",
+   "plain_text": "Attribute Domain must be provided for the ItemGroupDef element that references the SDTM or SEND implementation guides.",
+   "rule": "@Domain must be provided when ItemGroupDef/@def:StandardOID references def:Standard with def:Standard/@Name beginning with 'SDTM' or 'SEND'.",
+   "message": "Attribute Domain is missing for ItemGroupDef[@Name] that references an SDTM or SEND implementation guide.",
+   "versions": "2.1 only",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef"
+   ],
+   "element": "ItemGroupDef",
+   "attribute": "Domain"
+  },
+  {
+   "id": "106",
+   "plain_text": "Attribute Domain must be omitted for the ItemGroupDef element that reference the ADaM implementation guides.",
+   "rule": "@Domain must be omitted when ItemGroupDef/@def:StandardOID references def:Standard with def:Standard/@Name beginning with 'ADaM'.",
+   "message": "Attribute Domain is provided for ItemGroupDef[@Name] that references the ADaM implementation guide.",
+   "versions": "2.1 only",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef"
+   ],
+   "element": "ItemGroupDef",
+   "attribute": "Domain"
+  },
+  {
+   "id": "108",
+   "plain_text": "SASDatasetName must be provided in the context of a submission.",
+   "rule": "@SASDatasetName must be provided when ODM/@def:Context= 'Submission'.",
+   "message": "ItemGroupDef[@Name] must have a SASDatasetName attribute when @Context is Submission.",
+   "versions": "2.1 only",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef"
+   ],
+   "element": "ItemGroupDef",
+   "attribute": "SASDatasetName"
+  },
+  {
+   "id": "109",
+   "plain_text": "Non-conforming SAS dataset name.",
+   "rule": "Non-conforming SAS Dataset Name.",
+   "message": "SAS Dataset Name does not conform to submission requirements.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef"
+   ],
+   "element": "ItemGroupDef",
+   "attribute": "SASDatasetName"
+  },
+  {
+   "id": "110",
+   "plain_text": "Value of the SAS dataset name must match the ItemGroupDef name",
+   "rule": "The value of @SASDatasetName must match the value @Name.",
+   "message": "The value of SASDatasetName[@SASDatasetName] is different from the value of Name[@Name].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef"
+   ],
+   "element": "ItemGroupDef",
+   "attribute": "SASDatasetName"
+  },
+  {
+   "id": "112",
+   "plain_text": "SASDatasetName attribute value must match the filename identified by the file referenced by the ArchiveLocationID attribute.",
+   "rule": "@SASDatasetName value must match the filename component of  def:leaf[@ID=@def:ArchiveLocationID].",
+   "message": "@SASDatasetName value does not match the filename for def:leaf[@ID=@def:ArchiveLocationID]/@href.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef"
+   ],
+   "element": "ItemGroupDef",
+   "attribute": "SASDatasetName"
+  },
+  {
+   "id": "113",
+   "plain_text": "Attribute Repeating must be provided for the ItemGroupDef element.",
+   "rule": "@Repeating must be provided.",
+   "message": "Attribute Repeating is missing for element ItemGroupDef[@Name].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef"
+   ],
+   "element": "ItemGroupDef",
+   "attribute": "Repeating"
+  },
+  {
+   "id": "114",
+   "plain_text": "The value of the Repeating attribute must be one of \"Yes\", \"No\".",
+   "rule": "The value of @Repeating must be one of \"Yes\", \"No\".",
+   "message": "The value of Repeating[@Repeating] is not one of \"Yes\", \"No\" for ItemGroupDef[@Name].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef"
+   ],
+   "element": "ItemGroupDef",
+   "attribute": "Repeating"
+  },
+  {
+   "id": "115",
+   "plain_text": "The value of the IsReferenceData attribute must be one of 'Yes', 'No'.",
+   "rule": "The value of @IsReferenceData must be one of 'Yes', 'No'.",
+   "message": "The value of IsReferenceData[@IsReferenceData] is not one of 'Yes', 'No' for ItemGroupDef[@Name].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef"
+   ],
+   "element": "ItemGroupDef",
+   "attribute": "IsReferenceData"
+  },
+  {
+   "id": "116",
+   "plain_text": "The value of the Purpose attribute must be one of \"Tabulation\", \"Analysis\".",
+   "rule": "The value of @Purpose must be one of \"Tabulation\", \"Analysis\".",
+   "message": "The value of Purpose [@Purpose] is not one of \"Tabulation\", \"Analysis\" for ItemGroupDef[@Name].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef"
+   ],
+   "element": "ItemGroupDef",
+   "attribute": "Purpose"
+  },
+  {
+   "id": "117",
+   "plain_text": "Attribute Purpose must be provided for the ItemGroupDef element.",
+   "rule": "@Purpose must be provided.",
+   "message": "Attribute Purpose is missing for element ItemGroupDef[@Name].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef"
+   ],
+   "element": "ItemGroupDef",
+   "attribute": "Purpose"
+  },
+  {
+   "id": "118",
+   "plain_text": "Attribute def:Structure must be provided for the ItemGroupDef element.",
+   "rule": "@def:Structure must be provided.",
+   "message": "Attribute def:Structure is missing for ItemGroupDef[@Name].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef"
+   ],
+   "element": "ItemGroupDef",
+   "attribute": "def:Structure"
+  },
+  {
+   "id": "119",
+   "plain_text": "def:ArchiveLocationID is required when ODM@def:Context='Submission' and def:HasNoData is not present.",
+   "rule": "When ODM/@def:Context ='Submission' either ItemGroupDef/@def:HasNoData is present with value 'Yes' or ItemGroupDef/@def:ArchiveLocationID must be provided.",
+   "message": "def:ArchiveLocationID is missing for ItemGroupDef[@Name] when def:Context='Submission' and def:HasNoData is not present.",
+   "versions": "2.1 only",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef"
+   ],
+   "element": "ItemGroupDef",
+   "attribute": "def:ArchiveLocationID"
+  },
+  {
+   "id": "120",
+   "plain_text": "The def:ArchiveLocationID attribute on the ItemGroupDef element must reference an existing def:leaf element within the same ItemGroupDef.",
+   "rule": "A def:leaf element must exist within the same ItemGroupDef element with def:leaf/@ID = //ItemGroupDef/@def:ArchiveLocationID.",
+   "message": "There is no def:leaf within ItemGroupDef[@Name] with an ID attribute that matches ItemGroupDef[@Name]/def:ArchiveLocationID.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef"
+   ],
+   "element": "ItemGroupDef",
+   "attribute": "def:ArchiveLocationID"
+  },
+  {
+   "id": "121",
+   "plain_text": "The IsNonStandard attribute must not be populated when the dataset is standard.",
+   "rule": "@def:IsNonStandard must not be present when @def:StandardOID is present.",
+   "message": "@def:IsNonStandard must not be present when @def:StandardOID is present.",
+   "versions": "2.1 only",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef"
+   ],
+   "element": "ItemGroupDef",
+   "attribute": "def:IsNonStandard"
+  },
+  {
+   "id": "122",
+   "plain_text": "The IsNonStandard attribute must be populated when the dataset is not standard.",
+   "rule": "@def:IsNonStandard must be present when @def:StandardOID is not present.",
+   "message": "The IsNonStandard attribute is missing for ItemGroupDef[@Name] when the dataset is not standard.",
+   "versions": "2.1 only",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef"
+   ],
+   "element": "ItemGroupDef",
+   "attribute": "def:IsNonStandard"
+  },
+  {
+   "id": "123",
+   "plain_text": "The value of the def:IsNonStandard attribute must be 'Yes'.",
+   "rule": "The value of @def:IsNonStandard must be 'Yes'.",
+   "message": "The value of def:IsNonStandard[@def:IsNonStandard] is not 'Yes' for ItemGroupDef[@Name].",
+   "versions": "2.1 only",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef"
+   ],
+   "element": "ItemGroupDef",
+   "attribute": "def:IsNonStandard"
+  },
+  {
+   "id": "124",
+   "plain_text": "The def:StandardOID attribute on the ItemGroupDef element must reference an existing def:Standard element with Type=\"IG\".",
+   "rule": "A def:Standard element must exist with def:Standard/@OID = //ItemGroupDef/@def:StandardOID and with def:Standard/@Type=\"IG\".",
+   "message": "There is no def:Standard of type 'IG' with an OID attribute that matches itemGroupDef[@Name]/def:StandardOID.",
+   "versions": "2.1 only",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef"
+   ],
+   "element": "ItemGroupDef",
+   "attribute": "def:StandardOID"
+  },
+  {
+   "id": "125",
+   "plain_text": "Attribute def:HasNoData must be provided when def:ArchiveLocationID is not provided in the context of a regulatory submission.",
+   "rule": "@def:HasNoData must be provided when ODM/@Context = \"Submission\" and @def:ArchiveLocationID is not provided.",
+   "message": "Attribute def:HasNoData is missing for ItemGroupDef[@Name] when def:ArchiveLocationID is not provided in the context of a regulatory submission.",
+   "versions": "2.1 only",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef"
+   ],
+   "element": "ItemGroupDef",
+   "attribute": "def:HasNoData"
+  },
+  {
+   "id": "126",
+   "plain_text": "The value of the def:HasNoData attribute must be \"Yes\".",
+   "rule": "@def:HasNoData must be \"Yes\".",
+   "message": "The value of ItemGroupDef[@Name]/@def:HasNoData is not \"Yes\"",
+   "versions": "2.1 only",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef"
+   ],
+   "element": "ItemGroupDef",
+   "attribute": "def:HasNoData"
+  },
+  {
+   "id": "127",
+   "plain_text": "The def:CommentOID attribute on the ItemGroupDef element must reference an existing def:CommentDef element.",
+   "rule": "A def:CommentDef element must exist with def:CommentDef/@OID = //ItemGroupDef/@def:CommentOID.",
+   "message": "There is no def:CommentDef with an OID attribute that matches ItemGroupDef[@Name]/def:CommentOID.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef"
+   ],
+   "element": "ItemGroupDef",
+   "attribute": "def:CommentOID"
+  },
+  {
+   "id": "128",
+   "plain_text": "Child element Description must be provided for the ItemGroupDef element in the context of a submission.",
+   "rule": "//ItemGroupDef/Description must be provided when ODM/@def:Context='Submission'.",
+   "message": "Child element Description is missing for element ItemGroupDef[@Name] when @def:Context='Submission'.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef/Description"
+   ],
+   "element": "ItemGroupDef/Description",
+   "attribute": null
+  },
+  {
+   "id": "129",
+   "plain_text": "No more than one child element Description must be provided for the ItemGroupDef element.",
+   "rule": "No more than one //ItemGroupDef/Description must be provided.",
+   "message": "Child element Description is provided more than once for element ItemGroupDef[@OID].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef/Description"
+   ],
+   "element": "ItemGroupDef/Description",
+   "attribute": null
+  },
+  {
+   "id": "131",
+   "plain_text": "The dataset class needs to be provided when the file is used for submission.",
+   "rule": "The def:Class element must be provided when ODM/@def:Context = 'Submission'.",
+   "message": "$ItemGroupDef[@Name]/def:Class is missing.",
+   "versions": "2.1 only",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef/def:Class"
+   ],
+   "element": "def:Class",
+   "attribute": null
+  },
+  {
+   "id": "132",
+   "plain_text": "The value of the Name attribute in the ItemGroupDef/def:Class element must be one of the values from the CDISC/NCI GNRLOBSC General Observation Class codelist included in the Define-XML Controlled Terminology.",
+   "rule": "The value of ItemGroupDef/def:Class/@Name must be in the CDISC/NCI GNRLOBSC General Observation Class codelist with C-Code C103329.",
+   "message": "The value of the dataset's class name [ItemGroupDef/def:Class/@Name] is not in the CDISC/NCI GNRLOBSC General Observation Class codelist with C-Code C103329.",
+   "versions": "2.1 only",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef/def:Class"
+   ],
+   "element": "def:Class",
+   "attribute": "Name"
+  },
+  {
+   "id": "134",
+   "plain_text": "Attribute Name must be provided for the def:SubClass element.",
+   "rule": "@Name must be provided.",
+   "message": "Attribute Name is missing for def:SubClass in ItemGroupDef[@Name]/def:Class[@Name].",
+   "versions": "2.1 only",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef/def:Class/def:SubClass"
+   ],
+   "element": "def:SubClass",
+   "attribute": "Name"
+  },
+  {
+   "id": "135",
+   "plain_text": "No more than one child element CodeListRef must be provided for the ItemDef element.",
+   "rule": "No more than one //ItemDef/CodeListRef must be provided.",
+   "message": "Child element CodeListRef is provided more than once for element ItemDef[@Name].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemDef/CodeListRef"
+   ],
+   "element": "CodeListRef",
+   "attribute": null
+  },
+  {
+   "id": "137",
+   "plain_text": "The ItemDef element must have the OID attribute present.",
+   "rule": "@OID must be present.",
+   "message": "OID attribute must be present for ItemDef[@Name] within $ParentElementType[@OID]",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemDef"
+   ],
+   "element": "ItemDef",
+   "attribute": "OID"
+  },
+  {
+   "id": "138",
+   "plain_text": "The ItemDef element must have the Name attribute present.",
+   "rule": "@Name must be present.",
+   "message": "Name attribute must be present for ItemDef[@OID] within $ParentElementType[@OID].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemDef"
+   ],
+   "element": "ItemDef",
+   "attribute": "Name"
+  },
+  {
+   "id": "139",
+   "plain_text": "The ItemDef element must have the DataType attribute present.",
+   "rule": "@DataType must be present.",
+   "message": "DataType attribute must be present for ItemDef[@OID] within $ParentElementType[@OID].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemDef"
+   ],
+   "element": "ItemDef",
+   "attribute": "DataType"
+  },
+  {
+   "id": "140",
+   "plain_text": "The value of the DataType attribute must be one of \"text\", \"integer\", \"float\", \"date\", \"datetime\", \"time\", \"partialDate\", \"partialTime\", \"partialDatetime\", \"incompleteDatetime\", \"durationDatetime\", \"intervalDatetime\".",
+   "rule": "The value of @DataType must be one of \"text\", \"integer\", \"float\", \"date\", \"datetime\", \"time\", \"partialDate\", \"partialTime\", \"partialDatetime\", \"incompleteDatetime\", \"durationDatetime\", \"intervalDatetime\".",
+   "message": "The value of DataType[@DataType] is not one of \"text\", \"integer\", \"float\", \"date\", \"datetime\", \"time\", \"partialDate\", \"partialTime\", \"partialDatetime\", \"incompleteDatetime\", \"durationDatetime\", \"intervalDatetime\" for ItemDef[@Name].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemDef"
+   ],
+   "element": "ItemDef",
+   "attribute": "DataType"
+  },
+  {
+   "id": "141",
+   "plain_text": "The ItemDef element must have the Length attribute present when the DataType attribute has the value text, integer or float.",
+   "rule": "@Length must be present when the @DataType value in ('text', 'integer' or 'float').",
+   "message": "Length attribute must be present for ItemDef[@OID] within $ParentElementType[@OID] when (ItemDef[@DataType]) is one of 'text', 'integer' or 'float'.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemDef"
+   ],
+   "element": "ItemDef",
+   "attribute": "Length"
+  },
+  {
+   "id": "142",
+   "plain_text": "For any ItemDef element referenced by a def:ValueListDef/ItemRef, the value of attribute Length must be less than or equal to the value of attribute Length in the ItemDef element that references the value list.",
+   "rule": "//ItemDef[def:ValueListDef[//ItemDef/def:ValueListRef/@ValueListOID]/ItemRef/@ItemOID]/@Length is greater than $Parent/def:ValueListRef/@ValueListOID/@Length.",
+   "message": "Length for value definition in ItemDef element  ItemDef[ @OID='../def:ValueListRef[ValueListOID=def:ValueListDef/@OID]/ItemRef/@ItemOID']/@OID is greater than the Length for variable definition in ItemDef element $Parent/def:ValueListRef[@ValueListOID='def:ValueListDef/@OID']/@OID.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/def:ValueListDef/ItemRef"
+   ],
+   "element": "ItemDef",
+   "attribute": "Length"
+  },
+  {
+   "id": "143",
+   "plain_text": "Length attribute must not be present for ItemDef when DataType is not in ('integer','text', 'float').",
+   "rule": "ItemDef/@Length must not be present when ItemDef/@DataType not in ('integer','text', 'float').",
+   "message": "ItemDef[@Name] has a Length attribute but the DataType is not one of ('integer','text', 'float').",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemDef"
+   ],
+   "element": "ItemDef",
+   "attribute": "Length"
+  },
+  {
+   "id": "144",
+   "plain_text": "The value of attribute Length must be a positive integer number.",
+   "rule": "The value of @Length must be a positive integer number.",
+   "message": "The value of attribute Length[@Length] is not a positive integer number for $ParentItemGroupDef[@Name]/ItemDef[@Name].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemDef"
+   ],
+   "element": "ItemDef",
+   "attribute": "Length"
+  },
+  {
+   "id": "145",
+   "plain_text": "An ItemDef with the DataType attribute float must include a SignificantDigits attribute.",
+   "rule": "/ItemDef/@SignificantDigits must be present when ItemDef/@DateType='float'.",
+   "message": "ItemDef[@Name], with DataType 'float' must have the SignificantDigits attribute.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemDef"
+   ],
+   "element": "ItemDef",
+   "attribute": "SignificantDigits"
+  },
+  {
+   "id": "146",
+   "plain_text": "The value of attribute SignificantDigits must be a non-negative integer number.",
+   "rule": "The value of @SignificantDigits must be a non-negative integer number.",
+   "message": "The value of attribute SignificantDigits[@SignificantDigits] is not a non-negative integer number for $ParentItemGroupDef[@Name]/ItemDef[@Name].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemDef"
+   ],
+   "element": "ItemDef",
+   "attribute": "SignificantDigits"
+  },
+  {
+   "id": "147",
+   "plain_text": "The SASFieldName attribute must be provided for the ItemDef element when the Context is 'Submission' and the associated dataset is provided as SAS v5 XPT.",
+   "rule": "/ItemDef/@SASFieldName must be provided when /ODM/@Context='Submission' and the parent ItemGroupDef/@def:ArchiveLocationID refers to a def:leaf element with a @xlink:href attribute that references a file with the 'xpt' extension.",
+   "message": "The SASFieldName attribute for the ItemDef[@Name] must be provided when ODM/@Context is 'Submission'.",
+   "versions": "2.1 only",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemDef"
+   ],
+   "element": "ItemDef",
+   "attribute": "SASFieldName"
+  },
+  {
+   "id": "148",
+   "plain_text": "The def:CommentOID attribute on the ItemDef element must reference an existing def:CommentDef element.",
+   "rule": "A def:CommentDef element must exist with def:CommentDef/@OID = //ItemDef/@def:CommentOID.",
+   "message": "There is no def:CommentDef with an OID attribute that matches ItemDef[@Name]/def:CommentOID.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Specification",
+   "paths": [
+    "ODM/Study/MetaDataVersion/ItemDef"
+   ],
+   "element": "ItemDef",
+   "attribute": "def:CommentOID"
+  },
+  {
+   "id": "149",
+   "plain_text": "A variable defined in a standard with a Controlled Terminology requirement must have a CodeListRef element.",
+   "rule": "The ItemDef element representing a variable that is defined with a Controlled Terminology requirement in the def:Standard referenced in the ItemGroupDef must have a CodeListRef child element.",
+   "message": "ItemDef[@Name] for Standard [def:Standard/@Name], Version [def:Standard/@Version] requires Controlled Terminology and is missing the CodeListRef child element.",
+   "versions": "2.1 only",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemDef/CodeListRef"
+   ],
+   "element": "CodeListRef",
+   "attribute": null
+  },
+  {
+   "id": "151",
+   "plain_text": "The CodeListOID attribute on the CodeListRef element must reference an existing CodeList element.",
+   "rule": "A CodeList element must exist with CodeList/@OID = //CodeListRef/@CodeListOID.",
+   "message": "There is no CodeList with an OID attribute that matches ItemDef[@Name]/CodeListRef@CodeListOID.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemDef/CodeListRef"
+   ],
+   "element": "CodeListRef",
+   "attribute": "CodeListOID"
+  },
+  {
+   "id": "152",
+   "plain_text": "The def:StandardOID attribute on the CodeList element must reference an existing def:Standard element with Type=\"CT\".",
+   "rule": "A def:Standard element must exist with def:Standard/@OID = //CodeList/@def:StandardOID and with def:Standard/@Type=\"CT\".",
+   "message": "There is no def:Standard of type \"CT\" with an OID attribute that matches CodeList[@Name]/def:StandardOID.",
+   "versions": "2.1 only",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/CodeList"
+   ],
+   "element": "CodeList",
+   "attribute": "def:StandardOID"
+  },
+  {
+   "id": "153",
+   "plain_text": "Attribute def:IsNonStandard must be provided for a CodeList element where CDISC Controlled Terminology is required and there is no Alias provided.",
+   "rule": "@def:IsNonStandard must be provided when there is no CodeList/Alias[@Context=\"nci:ExtCodeID\"].",
+   "message": "Attribute def:IsNonStandard is missing and Alias[@Context=\"nci:ExtCodeID\"] is not provided for a variable with required controlled terminology.",
+   "versions": "2.1 only",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/CodeList"
+   ],
+   "element": "CodeList",
+   "attribute": "def:IsNonStandard"
+  },
+  {
+   "id": "154",
+   "plain_text": "For regulatory submissions, def:Origin metadata must be provided for all SDTM, ADaM or SEND variables.",
+   "rule": "def:Origin must be provided when there is no //def:ItemDef/def:ValueListRef element and ODM/@def:Context=\"Submission\".",
+   "message": "ItemDef[@Name]/def:Origin is not found.",
+   "versions": "2.1 only",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemDef/def:Origin"
+   ],
+   "element": "def:Origin",
+   "attribute": null
+  },
+  {
+   "id": "155",
+   "plain_text": "All variable definitions must have a  def:Origin child element when there is no def:ValueListRef child element. When there is a def:ValueListRef either the variable definition must have a def:Origin or it must be provided for each ItemDef referenced in the def:ValueLIstDef.",
+   "rule": "For all ItemDef elements referenced in an ItemGroupDef, there must be either a def:Origin child element or, if there is no def:Origin and there is a def:ValueListRef, each ItemDef referenced in the corresponding def:ValueListDef must have a def:Origin.",
+   "message": "There must be a  def:Origin defined at the variable or value level for ItemDef[@OID].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemDef/def:Origin"
+   ],
+   "element": "def:Origin",
+   "attribute": null
+  },
+  {
+   "id": "158",
+   "plain_text": "Attribute Type must be provided for the def:Origin element.",
+   "rule": "@Type must be provided.",
+   "message": "Attribute Type is missing for element def:Origin for ItemDef[@Name].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemDef/def:Origin"
+   ],
+   "element": "def:Origin",
+   "attribute": "Type"
+  },
+  {
+   "id": "159",
+   "plain_text": "ItemDef which has a def:Origin element with Type = 'Collected' must have a reference to a document which corresponds to AnnotatedCRF",
+   "rule": "When def:Origin/@Type=\"Collected\" and def:Origin/@Source is one of \"Investigator\" or \"Subject\", there must be a def:DocumentRef with def:DocumentRef/@leafID = def:AnnotatedCRF/def:DocumentRef/@leafID",
+   "message": "ItemDef[@Name] with def:Origin/@Type = 'Collected' and def:Origin/@Source = [@Source] does not have to an annotated CRF document.",
+   "versions": "2.1 only",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemDef/def:Origin"
+   ],
+   "element": "def:Origin",
+   "attribute": "Type"
+  },
+  {
+   "id": "160",
+   "plain_text": "The value of the Type attribute must be one of the values from the CDISC/NCI standard Origin Type codelist included in the Define-XML Controlled Terminology.",
+   "rule": "The value of @Type must be in the CDISC/NCI Standard  Origin Type codelist with C-Code C170449.",
+   "message": "The value of Type [@Type] is not in the CDISC/NCI Standard Origin Type codelist (C-Code C170449) for Define-XML.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemDef/def:Origin"
+   ],
+   "element": "def:Origin",
+   "attribute": "Type"
+  },
+  {
+   "id": "161",
+   "plain_text": "The value of the Source attribute must be one of \"Investigator\", \"Sponsor\", \"Subject\", \"Vendor\".",
+   "rule": "The value of @Source must be one of \"Investigator\", \"Sponsor\", \"Subject\", \"Vendor\".",
+   "message": "The value of Source[@Source] is not one of \"Investigator\", \"Sponsor\", \"Subject\", \"Vendor\" for ItemDef[@Name].",
+   "versions": "2.1 only",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemDef/def:Origin"
+   ],
+   "element": "def:Origin",
+   "attribute": "Source"
+  },
+  {
+   "id": "162",
+   "plain_text": "No more than one child element def:ValueListRef must be provided for the ItemDef element.",
+   "rule": "No more than one //ItemDef/def:ValueListRef must be provided.",
+   "message": "Child element def:ValueListRef is provided more than once for element ItemDef[@Name].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemDef/def:ValueListRef"
+   ],
+   "element": "def:ValueListRef",
+   "attribute": null
+  },
+  {
+   "id": "163",
+   "plain_text": "The ValueListOID attribute on the def:ValueListRef element must reference an existing def:ValueListDef element.",
+   "rule": "A def:ValueListDef element must exist with def:ValueListDef/@OID = //def:ValueListRef/@ValueListOID.",
+   "message": "There is no def:ValueListDef with an OID attribute that matches ItemDef[@Name]/def:ValueListRef/[@ValueListOID].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemDef/def:ValueListRef"
+   ],
+   "element": "def:ValueListRef",
+   "attribute": "ValueListOID"
+  },
+  {
+   "id": "164",
+   "plain_text": "Attribute ValueListOID must be provided for the def:ValueListRef element.",
+   "rule": "@ValueListOID must be provided.",
+   "message": "Attribute ValueListOID is missing for element def:ValueListRef in ItemDef[@Name].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemDef/def:ValueListRef"
+   ],
+   "element": "def:ValueListRef",
+   "attribute": "ValueListOID"
+  },
+  {
+   "id": "165",
+   "plain_text": "CodeList element must contain either one or more EnumeratedItem elements, one or more CodeListItem elements or one ExternalCodelist element.",
+   "rule": "//CodeList/@Name must contain either one or more EnumeratedItem elements, one or more CodeListItem elements or one ExternalCodelist element.",
+   "message": "CodeList[@Name] must contain either one or more EnumeratedItem elements, one or more CodeListItem elements or one ExternalCodelist element.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/CodeList"
+   ],
+   "element": "CodeList",
+   "attribute": null
+  },
+  {
+   "id": "166",
+   "plain_text": "Attribute OID must be provided for the CodeList element.",
+   "rule": "@OID must be provided.",
+   "message": "Attribute OID is missing for element CodeList[@Name].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/CodeList"
+   ],
+   "element": "CodeList",
+   "attribute": "OID"
+  },
+  {
+   "id": "167",
+   "plain_text": "The value of the def:IsNonStandard attribute must be \"Yes\".",
+   "rule": "The value of @def:IsNonStandard must be \"Yes\".",
+   "message": "The value of def:IsNonStandard[@def:IsNonStandard] is not \"Yes\" for CodeList[@Name].",
+   "versions": "2.1 only",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/CodeList"
+   ],
+   "element": "CodeList",
+   "attribute": "def:IsNonStandard"
+  },
+  {
+   "id": "168",
+   "plain_text": "Child element Description must be provided for the ItemDef element which represents a variable referenced in a dataset in the context of a submission.",
+   "rule": "//ItemDef/Description must be provided where ItemDef[@OID] is referenced from ItemGroupDef/ItemRef when ODM/@def:Context='Submission'.",
+   "message": "Child element Description is missing for element ItemDef[@Name] referenced from ItemGroupDef[@Name] when @def:Context='Submission'.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemDef/Description"
+   ],
+   "element": "ItemDef/Description",
+   "attribute": null
+  },
+  {
+   "id": "169",
+   "plain_text": "No more than one child element Description must be provided for the ItemDef element.",
+   "rule": "No more than one //ItemDef/Description must be provided.",
+   "message": "Child element Description is provided more than once for element ItemDef[@OID].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemDef/Description"
+   ],
+   "element": "ItemDef/Description",
+   "attribute": null
+  },
+  {
+   "id": "171",
+   "plain_text": "Attribute Name must be provided for the CodeList element.",
+   "rule": "@Name must be provided.",
+   "message": "Attribute Name is missing for element CodeList[@OID].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/CodeList"
+   ],
+   "element": "CodeList",
+   "attribute": "Name"
+  },
+  {
+   "id": "172",
+   "plain_text": "Name attribute value must be unique within the set of Codelist elements.",
+   "rule": "@Name must be unique within the set of CodeList elements.",
+   "message": "There is more than one Codelist with Name [@Name].",
+   "versions": "2.1 only",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/CodeList"
+   ],
+   "element": "CodeList",
+   "attribute": "Name"
+  },
+  {
+   "id": "173",
+   "plain_text": "Attribute DataType must be provided for the CodeList element.",
+   "rule": "@DataType must be provided.",
+   "message": "Attribute DataType is missing for element CodeList[@Name].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/CodeList"
+   ],
+   "element": "CodeList",
+   "attribute": "DataType"
+  },
+  {
+   "id": "174",
+   "plain_text": "The value of the DataType attribute must be one of \"text\", \"float\", \"integer\".",
+   "rule": "The value of @DataType must be one of \"text\", \"float\", \"integer\".",
+   "message": "The value of DataType[@DataType] is not one of \"text\", \"float\", \"integer\" for Codelist[@Name].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/CodeList"
+   ],
+   "element": "CodeList",
+   "attribute": "DataType"
+  },
+  {
+   "id": "175",
+   "plain_text": "Codelist SASFormatName attribute must contain a valid SAS format name. It needs to start with a $ character in case the CodeList DataType is text.",
+   "rule": "The SASFormatName must be a valid SAS format name. The SASFormatName needs to start with a $ character in case the CodeList DataType is text.",
+   "message": "ItemDef[@Name] has an invalid SASFormatName attribute value [@SASFormatName].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/CodeList"
+   ],
+   "element": "CodeList",
+   "attribute": "SASFormatName"
+  },
+  {
+   "id": "176",
+   "plain_text": "The def:StandardOID must be provided when the controlled terminology is drawn from a published CDISC standard.",
+   "rule": "@def:StandardOID must be provided when Alias/@Context = 'nci:ExtCodeID' and /ODM/@Context = \"Submission\"",
+   "message": "Codelist[@Name] references a NCI codelist but does not include the def:StandardOID attribute.",
+   "versions": "2.1 only",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/CodeList"
+   ],
+   "element": "CodeList",
+   "attribute": "def:StandardOID"
+  },
+  {
+   "id": "177",
+   "plain_text": "The def:CommentOID attribute on the CodeList element must reference an existing def:CommentDef element.",
+   "rule": "A def:CommentDef element must exist with def:CommentDef/@OID = //CodeList/@def:CommentOID.",
+   "message": "There is no def:CommentDef with an OID attribute that matches CodeList[@Name]/def:CommentOID.",
+   "versions": "2.1 only",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/CodeList"
+   ],
+   "element": "CodeList",
+   "attribute": "def:CommentOID"
+  },
+  {
+   "id": "178",
+   "plain_text": "The value of the def:ExtendedValue attribute must be \"Yes\".",
+   "rule": "The value of @def:ExtendedValue must be \"Yes\".",
+   "message": "The value of def:ExtendedValue[@def:ExtendedValue] is not \"Yes\" for CodeList[@Name]/EnumeratedItem[@CodedValue].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/CodeList/EnumeratedItem"
+   ],
+   "element": "EnumeratedItem",
+   "attribute": "def:ExtendedValue"
+  },
+  {
+   "id": "179",
+   "plain_text": "For NCI/CDISC Controlled Terminology, the value of CodedValue must exactly match the CDISC Submission Value from the published Controlled Terminology.",
+   "rule": "CodeList/EnumeratedItem/@CodedValue must exactly match CDISC Submission value from the published Controlled Terminology referenced in the CodeList/@def:StandardOID.",
+   "message": "CodeList[@Name]/EnumeratedItem[@CodedValue]/@CodedValue does not match CDISC Submission Value for CDISC Controlled Terminology with C-Code CodeList[@Name]/Alias[@Name].",
+   "versions": "2.1 only",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/CodeList/EnumeratedItem"
+   ],
+   "element": "EnumeratedItem",
+   "attribute": "CodedValue"
+  },
+  {
+   "id": "180",
+   "plain_text": "Attribute CodedValue must be provided for the EnumeratedItem element.",
+   "rule": "@CodedValue must be provided.",
+   "message": "Attribute CodedValue is missing for element EnumeratedItem in CodeList[@Name].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/CodeList/EnumeratedItem"
+   ],
+   "element": "EnumeratedItem",
+   "attribute": "CodedValue"
+  },
+  {
+   "id": "182",
+   "plain_text": "The value of attribute Rank must be an integer number.",
+   "rule": "The value of @Rank must be an integer number.",
+   "message": "The value of attribute Rank[@Rank] is not an integer number for EnumeratedItem[@CodedValue] in CodeList[@Name]",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/CodeList/EnumeratedItem"
+   ],
+   "element": "EnumeratedItem",
+   "attribute": "Rank"
+  },
+  {
+   "id": "183",
+   "plain_text": "Attribute Rank must be provided for the EnumeratedItem element when there is at least one Rank attribute value provided for the same CodeList.",
+   "rule": "@Rank must be provided when at least one $ParentCodeList/EnumeratedItem/@Rank is provided.",
+   "message": "Attribute Rank is missing for element EnumeratedItem[@CodedValue] in CodeList[@Name] which has attribute Rank provided for another EnumeratedItem.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/CodeList/EnumeratedItem"
+   ],
+   "element": "EnumeratedItem",
+   "attribute": "Rank"
+  },
+  {
+   "id": "184",
+   "plain_text": "The value of attribute OrderNumber must be an integer number.",
+   "rule": "The value of @OrderNumber must be an integer number.",
+   "message": "The value of attribute OrderNumber[@OrderNumber] is not an integer number for EnumeratedItem[@CodedValue] in CodeList[@Name]",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/CodeList/EnumeratedItem"
+   ],
+   "element": "EnumeratedItem",
+   "attribute": "OrderNumber"
+  },
+  {
+   "id": "185",
+   "plain_text": "Attribute OrderNumber must be provided for the EnumeratedItem element when there is at least one OrderNumber attribute value provided for the same CodeList.",
+   "rule": "@OrderNumber must be provided when at least one $ParentCodeList/EnumeratedItem/@OrderNumber is provided.",
+   "message": "Attribute OrderNumber is missing for element EnumeratedItem[@CodedValue] in CodeList[@Name] which has attribute OrderNumber provided for another EnumeratedItem.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/CodeList/EnumeratedItem"
+   ],
+   "element": "EnumeratedItem",
+   "attribute": "OrderNumber"
+  },
+  {
+   "id": "186",
+   "plain_text": "Attribute def:ExtendedValue must be provided for the EnumeratedItem element when the CodedValue is an extended value.",
+   "rule": "@def:ExtendedValue  must be provided when [parent CodeList]/@def:StandardOID is provided and the [parent Codelist] is defined as extensible and CodeList[@Name]/EnumeratedItem/[@CodedValue] is not on the list of CDISC Submission Value values from the published Controlled Terminology referenced in the [parent CodeList]@def:StandardOID.",
+   "message": "Attribute def:ExtendedValue is missing for element EnumeratedItem[@CodedValue] in CodeList[@Name].",
+   "versions": "2.1 only",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/CodeList/EnumeratedItem"
+   ],
+   "element": "EnumeratedItem",
+   "attribute": "def:ExtendedValue"
+  },
+  {
+   "id": "187",
+   "plain_text": "Attribute @def:ExtendedValue must not be present when a CodeList is non-extensible.",
+   "rule": "EnumeratedItem@def:ExtendedValue must not be present when [parent CodeList]/Alias[@Name] is non-extensible.",
+   "message": "EnumeratedItem[@CodedValue] has a def:ExtendedValue attribute but the CodeList[@Name]/Alias[@Name] is non-extensible.",
+   "versions": "2.1 only",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/CodeList/EnumeratedItem"
+   ],
+   "element": "EnumeratedItem",
+   "attribute": "def:ExtendedValue"
+  },
+  {
+   "id": "191",
+   "plain_text": "Attribute CodedValue must be provided for the CodeListItem element.",
+   "rule": "@CodedValue must be provided.",
+   "message": "Attribute CodedValue is missing for element CodeListItem in CodeList[@Name].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/CodeList/CodeListItem"
+   ],
+   "element": "CodeListItem",
+   "attribute": "CodedValue"
+  },
+  {
+   "id": "192",
+   "plain_text": "For NCI/CDISC Controlled Terminology, CodedValue must exactly match the CDISC Submission Value from the published Controlled Terminology.",
+   "rule": "CodeList/CodeListItem/@CodedValue must exactly match CDISC Submission Value from the published Controlled Terminology referenced in the CodeList/@def:StandardOID.",
+   "message": "CodeList[@Name]/CodeListItem[@CodedValue]/@CodedValue does not match CDISC Submission Value for CDISC Controlled Terminology with C-Code CodeList[@Name]/Alias[@Name].",
+   "versions": "2.1 only",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/CodeList/CodeListItem"
+   ],
+   "element": "CodeListItem",
+   "attribute": "CodedValue"
+  },
+  {
+   "id": "193",
+   "plain_text": "The value of attribute Rank must be an integer number.",
+   "rule": "The value of @Rank must be an integer number.",
+   "message": "The value of attribute Rank[@Rank] is not an integer number for CodeListItem[@CodedValue] in CodeList[@Name]",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/CodeList/CodeListItem"
+   ],
+   "element": "CodeListItem",
+   "attribute": "Rank"
+  },
+  {
+   "id": "194",
+   "plain_text": "Attribute Rank must be provided for the CodeListItem element when there is at least one Rank attribute value provided for the same CodeList.",
+   "rule": "@Rank must be provided when at least one $ParentCodeList/CodeListItem/@Rank is provided.",
+   "message": "Attribute Rank is missing for element CodeListItem[@CodedValue] in CodeList[@Name] which has attribute Rank provided for another CodeListItem.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/CodeList/CodeListItem"
+   ],
+   "element": "CodeListItem",
+   "attribute": "Rank"
+  },
+  {
+   "id": "195",
+   "plain_text": "The value of attribute OrderNumber must be an integer number.",
+   "rule": "The value of @OrderNumber must be an integer number.",
+   "message": "The value of attribute OrderNumber[@OrderNumber] is not an integer number for CodeListItem[@CodedValue] in CodeList[@Name]",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/CodeList/CodeListItem"
+   ],
+   "element": "CodeListItem",
+   "attribute": "OrderNumber"
+  },
+  {
+   "id": "196",
+   "plain_text": "Attribute OrderNumber must be provided for the CodeListItem element when there is at least one OrderNumber attribute value provided for the same CodeList.",
+   "rule": "@OrderNumber must be provided when at least one $ParentCodeList/CodeListItem/@OrderNumber is provided.",
+   "message": "Attribute OrderNumber is missing for element CodeListItem[@CodedValue] in CodeList[@Name] which has attribute OrderNumber provided for another CodeListItem.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/CodeList/CodeListItem"
+   ],
+   "element": "CodeListItem",
+   "attribute": "OrderNumber"
+  },
+  {
+   "id": "197",
+   "plain_text": "The value of the def:ExtendedValue attribute must be \"Yes\".",
+   "rule": "The value of @def:ExtendedValue must be \"Yes\".",
+   "message": "The value of def:ExtendedValue[@def:ExtendedValue] is not \"Yes\" for CodeList[@Name]/CodeListItem[@CodedValue].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/CodeList/CodeListItem"
+   ],
+   "element": "CodeListItem",
+   "attribute": "def:ExtendedValue"
+  },
+  {
+   "id": "198",
+   "plain_text": "No more than one child element Decode may be provided for the CodeListItem element.",
+   "rule": "No more than one //CodeListItem/Decode may be provided.",
+   "message": "Child element Decode is provided more than once for\nCodeList[@Name]/CodeListItem[@CodedValue].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/CodeList/CodeListItem/Decode"
+   ],
+   "element": "Decode",
+   "attribute": null
+  },
+  {
+   "id": "199",
+   "plain_text": "Child element Decode must be provided for the CodeListItem element.",
+   "rule": "//CodeListItem/Decode must be provided.",
+   "message": "Child element Decode is missing for element CodeList[@Name]/CodeListItem[@CodedValue].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/CodeList/CodeListItem/Decode"
+   ],
+   "element": "Decode",
+   "attribute": null
+  },
+  {
+   "id": "201",
+   "plain_text": "Attribute def:ExtendedValue must be provided for the CodeLIstItem element when the CodedValue is an extended value.",
+   "rule": "@def:ExtendedValue must be provided when [parent CodeList]@def:StandardOID is provided and the [parent Codelist] is defined as extensible and CodeList[@Name]/CodeListItem[@CodedValue] is not on the list of CDISC Submission Value values from the published Controlled Terminology referenced in the [parent CodeList]@def:StandardOID.",
+   "message": "Attribute def:ExtendedValue is missing for element CodeLIstItem[@CodedValue] in CodeList[@Name].",
+   "versions": "2.1 only",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/CodeList/CodeListItem"
+   ],
+   "element": "CodeListItem",
+   "attribute": "def:ExtendedValue"
+  },
+  {
+   "id": "202",
+   "plain_text": "Attribute @def:ExtendedValue must not be present when a CodeList is non-extensible.",
+   "rule": "CodeListItem/@def:ExtendedValue must not be present when [parent CodeList]/Alias[@Name] is non-extensible.",
+   "message": "CodeListItem[@CodedValue] has a def:ExtendedValue attribute but the CodeList[@Name]/Alias[@Name] is non-extensible.",
+   "versions": "2.1 only",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/CodeList/CodeListItem"
+   ],
+   "element": "CodeListItem",
+   "attribute": "def:ExtendedValue"
+  },
+  {
+   "id": "203",
+   "plain_text": "Each ExternalCodeList element must have a Dictionary attribute.",
+   "rule": "Each ExternalCodeList element must have a Dictionary attribute.",
+   "message": "CodeList[@Name]/ExternalCodeList Dictionary attribute must be present.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/CodeList/ExternalCodeList"
+   ],
+   "element": "ExternalCodeList",
+   "attribute": "Dictionary"
+  },
+  {
+   "id": "204",
+   "plain_text": "Each ExternalCodeList element must have a Version attribute.",
+   "rule": "Each ExternalCodeList element must have a Version attribute.",
+   "message": "CodeList[@Name]/ExternalCodeList Version attribute must be present.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/CodeList/ExternalCodeList"
+   ],
+   "element": "ExternalCodeList",
+   "attribute": "Version"
+  },
+  {
+   "id": "205",
+   "plain_text": "No more than one child element Description may be provided for the MethodDef element.",
+   "rule": "No more than one //MethodDef/Description may be provided.",
+   "message": "Child element Description is provided more than once for MethodDef[@Name] .",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/MethodDef/Description"
+   ],
+   "element": "MethodDef/Description",
+   "attribute": null
+  },
+  {
+   "id": "206",
+   "plain_text": "Each MethodDef element must have an OID attribute.",
+   "rule": "Each MethodDef element must have an OID attribute.",
+   "message": "MethodDef OID attribute must be present.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/MethodDef"
+   ],
+   "element": "MethodDef",
+   "attribute": "OID"
+  },
+  {
+   "id": "207",
+   "plain_text": "Attribute Name must be provided.",
+   "rule": "@Name attribute must be provided",
+   "message": "Attribute Name is missing for element MethodDef[@OID].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/MethodDef"
+   ],
+   "element": "MethodDef",
+   "attribute": "Name"
+  },
+  {
+   "id": "208",
+   "plain_text": "Each MethodDef element must have a Type attribute.",
+   "rule": "@Type is Required for MethodDef.",
+   "message": "@Type is Required for MethodDEF[@OID].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/MethodDef"
+   ],
+   "element": "MethodDef",
+   "attribute": "Type"
+  },
+  {
+   "id": "209",
+   "plain_text": "The value of the Type attribute must be one of \"Computation\", \"Imputation\".",
+   "rule": "@Type must be one of \"Computation\", \"Imputation\".",
+   "message": "The value of MethodDef[@Type] is not one of \"Computation\", \"Imputation\" for MethodDef[@Name].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/MethodDef"
+   ],
+   "element": "MethodDef",
+   "attribute": "Type"
+  },
+  {
+   "id": "210",
+   "plain_text": "Child element Description must be provided for the MethodDef element.",
+   "rule": "//MethodDef/Description must be provided.",
+   "message": "Child element Description is missing for element MethodDef[@OID].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/MethodDef/Description"
+   ],
+   "element": "MethodDef/Description",
+   "attribute": null
+  },
+  {
+   "id": "212",
+   "plain_text": "Attribute OID attribute must be provided for the def:CommentDef element.",
+   "rule": "@OID must be provided.",
+   "message": "Attribute OID is missing for def:CommentDef.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/def:CommentDef"
+   ],
+   "element": "def:CommentDef",
+   "attribute": "OID"
+  },
+  {
+   "id": "213",
+   "plain_text": "There must be only one def:CommentDef element for a given OID attribute value.",
+   "rule": "//def:CommentDef/@OID must be unique within Study/MetaDataVersion.",
+   "message": "There is more than one def:CommentDef element with the OID attribute = [def:CommentDef/@OID].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "ODM/Study/MetaDataVersion/def:CommentDef"
+   ],
+   "element": "def:CommentDef",
+   "attribute": "OID"
+  },
+  {
+   "id": "214",
+   "plain_text": "Child element Description must be provided for the def:CommentDef element.",
+   "rule": "//def:CommentDef/Description must be provided.",
+   "message": "Child element Description is missing for element def:CommentDef[@OID].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/def:CommentDef/Description"
+   ],
+   "element": "def:CommentDef/Description",
+   "attribute": null
+  },
+  {
+   "id": "215",
+   "plain_text": "No more than one child element Description must be provided for the def:CommentDef element.",
+   "rule": "No more than one //def:CommentDef/Description must be provided.",
+   "message": "Child element Description is provided more than once for element def:CommentDef[@OID].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/def:CommentDef/Description"
+   ],
+   "element": "def:CommentDef/Description",
+   "attribute": null
+  },
+  {
+   "id": "216",
+   "plain_text": "ID attribute value must be unique within the set of def:leaf elements.",
+   "rule": "@ID must be unique within the set of //def:leaf/@ID values.",
+   "message": "[count(//def:leaf/[@ID]] def:leaf elements found with the same def:leaf[@ID] value.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/def:leaf",
+    "/ODM/Study/MetaDataVersion/ItemGroupDef/def:leaf"
+   ],
+   "element": "def:leaf",
+   "attribute": "ID"
+  },
+  {
+   "id": "218",
+   "plain_text": "Child element def:title must be provided for the def:leaf element.",
+   "rule": "//def:leaf/def:title must be provided.",
+   "message": "Child element def:title is missing for element def:leaf[ID].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/def:leaf/def:title",
+    "/ODM/Study/MetaDataVersion/ItemGroupDef/def:leaf/def:title"
+   ],
+   "element": "def:title",
+   "attribute": null
+  },
+  {
+   "id": "219",
+   "plain_text": "No more than one child element def:title maybe provided for the def:leaf element.",
+   "rule": "No more than one //def:leaf/def:title may be provided.",
+   "message": "Child element def:title is provided more than once for element def:leaf[@ID].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/def:leaf/def:title",
+    "/ODM/Study/MetaDataVersion/ItemGroupDef/def:leaf/def:title"
+   ],
+   "element": "def:title",
+   "attribute": null
+  },
+  {
+   "id": "221",
+   "plain_text": "Attribute Context must be provided for the FormalExpression element.",
+   "rule": "@Context must be provided.",
+   "message": "Attribute Context is missing for MethodDef[@Name]/FormalExpression.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/MethodDef/FormalExpression"
+   ],
+   "element": "FormalExpression",
+   "attribute": "Context"
+  },
+  {
+   "id": "230",
+   "plain_text": "The value of the OID attribute must be unique within the Define-XML document.",
+   "rule": "@OID must be unique within the Define-XML document.",
+   "message": "There is more than one element with OID [@OID].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study",
+    "/ODM/Study/MetaDataVersion",
+    "/ODM/Study/MetaDataVersion/Standard",
+    "/ODM/Study/MetaDataVersion/def:ValueListDef",
+    "/ODM/Study/MetaDataVersion/def:WhereClauseDef",
+    "/ODM/Study/MetaDataVersion/ItemGroupDef",
+    "/ODM/Study/MetaDataVersion/ItemDef",
+    "/ODM/Study/MetaDataVersion/CodeList",
+    "/ODM/Study/MetaDataVersion/MethodDef",
+    "/ODM/Study/MetaDataVersion/def:CommentDef"
+   ],
+   "element": "All",
+   "attribute": "OID"
+  },
+  {
+   "id": "233",
+   "plain_text": "Child element def:Standard must be provided for the def:Standards element.",
+   "rule": "//def:Standards/def:Standard must be provided.",
+   "message": "Element def:Standards must have at least one  def:Standard child element.",
+   "versions": "2.1 only",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/def:Standards/def:Standard"
+   ],
+   "element": "def:Standards",
+   "attribute": null
+  },
+  {
+   "id": "235",
+   "plain_text": "No more than one /def:ValueListDef/Description may be provided.",
+   "rule": "Child element Description is provided more than once for def:ValueListDef[@OID] .",
+   "message": "Child element Description is provided more than once for def:ValueListDef[@OID].",
+   "versions": "2.1 only",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/def:ValueListDef/Description"
+   ],
+   "element": "def:ValueListDef/Description",
+   "attribute": null
+  },
+  {
+   "id": "236",
+   "plain_text": "Attribute OID attribute must be provided for the def:ValueListDef element.",
+   "rule": "@OID must be provided.",
+   "message": "Attribute OID is missing for element def:ValueListDef.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/def:ValueListDef"
+   ],
+   "element": "def:ValueListDef",
+   "attribute": "OID"
+  },
+  {
+   "id": "237",
+   "plain_text": "Child element ItemRef must be provided for the def:ValueListDef element.",
+   "rule": "//def:ValueListDef/ItemRef must be provided.",
+   "message": "Child element ItemRef is missing for element def:ValueListDef[@OID].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/def:ValueListDef"
+   ],
+   "element": "def:ValueListDef ItemRef",
+   "attribute": null
+  },
+  {
+   "id": "238",
+   "plain_text": "Attribute OrderNumber must be provided for the ItemRef element when there is at least one OrderNumber attribute value provided for the same parent def:ValueListDef or def:ItemGroupDef.",
+   "rule": "@OrderNumber must be provided for $Parent/ItemRef[@ItemOID] when count($Parent/ItemRef/@OrderNumber) is > 1.",
+   "message": "Attribute OrderNumber is missing for element ItemRef[@ItemOID] in $Parent[@OID]/ItemRef[@ItemOID]. The  OrderNumber attribute must be provided for all or none of the ItemRef elements in $Parent[@OID].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/def:ValueListDef/ItemRef"
+   ],
+   "element": "ItemRef",
+   "attribute": "OrderNumber"
+  },
+  {
+   "id": "239",
+   "plain_text": "The value of the IsReferenceData attribute must be \"Yes\" when the ItemGroupDef references a Trial Design dataset.",
+   "rule": "@IsReferenceData must be \"Yes\" when ItemGroupDef/def:Class/@Name is \"TRIAL DESIGN\".",
+   "message": "The value of IsReferenceData[@IsReferenceData] is not \"Yes\" for ItemGroupDef[@Name]/ItemRef[@ItemOID] when ItemGroupDef/def:Class/@Name=\"TRIAL DESIGN\".",
+   "versions": "2.1 only",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef"
+   ],
+   "element": "ItemGroupDef",
+   "attribute": "IsReferenceData"
+  },
+  {
+   "id": "240",
+   "plain_text": "The def:CommentOID attribute must be provided when the value of the ItemGroupDef def:HasNoData attribute is \"Yes\".",
+   "rule": "@def:CommentOID must be provided when @def:HasNoData is \"Yes\".",
+   "message": "Comment is not provided for ItemGroupDef[@Name] when def:HasNoData attribute value  is \"Yes\".",
+   "versions": "2.1 only",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef"
+   ],
+   "element": "ItemGroupDef",
+   "attribute": "def:CommentOID"
+  },
+  {
+   "id": "241",
+   "plain_text": "Child element ItemRef must be provided for the ItemGroupDef element.",
+   "rule": "//ItemGroupDef/ItemRef must be provided.",
+   "message": "Child element ItemRef is missing for element ItemGroupDef[@Name].",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef"
+   ],
+   "element": "ItemGroupDef ItemRef",
+   "attribute": null
+  },
+  {
+   "id": "242",
+   "plain_text": "The def:CommentOID attribute must be provided for an ItemDef when its ItemOID is referenced in an ItemRef that has the def:HasNoData  attribute  value 'Yes'.",
+   "rule": "//ItemDef/@def:CommentOID must be provided when at least one //ItemRef[@ItemOID=ItemDef/@OID]/@def:HasNoData=\"Yes\".",
+   "message": "ItemDef[@OID]/@def:CommentOID is not provided  when ItemGroupDef[@OID]/ItemRef[@ItemOID] has def:HasNoData attribute set to  'Yes'.",
+   "versions": "2.1 only",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemDef",
+    "/ODM/Study/MetaDataVersion/ItemRef"
+   ],
+   "element": "ItemDef",
+   "attribute": "def:CommentOID"
+  },
+  {
+   "id": "243",
+   "plain_text": "No more than one child element Description may be provided for the def:Origin element.",
+   "rule": "No more than one //def:OriginDef/Description may be provided.",
+   "message": "ItemDef[@OID]/def:Origin[@Type] has count(def:Origin/Description)  Description child elements. Only 1 is permitted.",
+   "versions": "2.1 only",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/def:OriginDef/Description"
+   ],
+   "element": "def:Origin Description",
+   "attribute": null
+  },
+  {
+   "id": "244",
+   "plain_text": "No more than one CodeList/Description may be provided.",
+   "rule": "CodeList[@OID]  has count(CodeList[@OID]/Description) Description child elements.",
+   "message": "CodeList[@OID]  has count(CodeList[@OID]/Description) Description child elements. Only 1 is permitted.",
+   "versions": "2.1 only",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/CodeList/Description"
+   ],
+   "element": "CodeList Description",
+   "attribute": null
+  },
+  {
+   "id": "245",
+   "plain_text": "No more than one Description child element may be provided for an EnumeratedItem element.",
+   "rule": "CodeList[@OID]/EnumeratedItem[@CodedValue] has count(CodeList[@OID]/EnumeratedItem[@CodedValue]/Description) child elements.",
+   "message": "CodeList[@OID]/EnumeratedItem[@CodedValue] has count(CodeList[@OID]/EnumeratedItem[@CodedValue]/Description) child elements. Only 1 is permitted.",
+   "versions": "2.1 only",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/CodeListItem/EnumeratedItem/Description"
+   ],
+   "element": "EnumeratedItem Description",
+   "attribute": null
+  },
+  {
+   "id": "246",
+   "plain_text": "No more than one //CodeListItem/Description may be provided.",
+   "rule": "count(CodeList[@OID]/CodeListItem[@CodedValue]/Description) > 1",
+   "message": "CodeList[@OID/CodeListItem[@CodedValue] has count(CodeList[@OID]/CodeListItem[@CodedValue]/Description) Description child elements. Only 1 is permitted.",
+   "versions": "2.1 only",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/CodeList/CodelistItem/Description"
+   ],
+   "element": "CodeListItem Description",
+   "attribute": null
+  },
+  {
+   "id": "248",
+   "plain_text": "Attribute xlink:href must be provided.",
+   "rule": "def:leaf[@ID]/@xlink:href is missing.",
+   "message": "def:leaf[@ID] is missing the xlink:href attribute.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/MetaDataVersion/def:leaf",
+    "/ODM/MetaDataVersion/ItemGroupDef/def:leaf"
+   ],
+   "element": "def:leaf",
+   "attribute": "xlink:href"
+  },
+  {
+   "id": "249",
+   "plain_text": "There must be an Alias element with the Context Attribute nci:ExtCodeID when the Codelist includes a reference to a CDISC Controlled Terminology Standard.",
+   "rule": "if Codelist/@def:StandardOID is non-null, count(Alias[@Context='nci:ExtCodeID'] = 1.",
+   "message": "Missing Alias element with Context attribute 'nci:ExtCodeID' for CodeList[@OID] with def:Standard = //def:Standard[@OID=CodeList/@def:StandardOID]/@Name.",
+   "versions": "2.1 only",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/CodeList/Alias"
+   ],
+   "element": "Alias",
+   "attribute": "Context"
+  },
+  {
+   "id": "250",
+   "plain_text": "No more than one ExternalCodeList element may be provided for a CodeList element.",
+   "rule": "count(CodeList[@OID]/ExternalCodeList)>1.",
+   "message": "CodeLists may have only one ExternalCodeList. CodeList[@OID]  has count(Codelist/ExternalCodeList) ExternalCodeList child elements.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/CodeList/ExternalCodeList"
+   ],
+   "element": "CodeList ExternalCodeList",
+   "attribute": null
+  },
+  {
+   "id": "251",
+   "plain_text": "The value of the Purpose attribute must be \"Tabulation\" for an ItemGroupDef element that represents a dataset defined as following an SDTMIG or SENDIG standard.",
+   "rule": "//ItemGroupDef/@Purpose must be \"Tabulation\" where def:Standard/@Name begins with \"SDTM\" or \"SEND\" and   ItemGroupDef[@def:StandardOID = def:Standard/@OID].",
+   "message": "The Purpose attribute for ItemGroupDef[@Name] is not \"Tabulation\" but the dataset follows the def:Standard[OID=ItemGroupDef/@def:StandardOID]/@Name.",
+   "versions": "2.1 only",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef"
+   ],
+   "element": "ItemGroupDef",
+   "attribute": "Purpose"
+  },
+  {
+   "id": "252",
+   "plain_text": "The value of the Purpose attribute must be \"Analysis\" for an ItemGroupDef element that represents a dataset defined as following a ADaMIG standard.",
+   "rule": "//ItemGroupDef/@Purpose must be \"Analysis\" where def:Standard/@Name = \"ADaMIG\" and   ItemGroupDef[@def:StandardOID = def:Standard/@OID].",
+   "message": "The Purpose attribute for ItemGroupDef[@Name] is not \"Analysis\" but the dataset follows the [def:Standard[OID=ItemGroupDef/@def:StandardOID]/@Name] standard.",
+   "versions": "2.1 only",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef"
+   ],
+   "element": "ItemGroupDef",
+   "attribute": "Purpose"
+  },
+  {
+   "id": "254",
+   "plain_text": "A valid CreationDateTime attribute  must be provided for the ODM element.",
+   "rule": "ODM@CreationDateTime must be provided.",
+   "message": "The ODM CreationDateTime attribue  is missing or invalid.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM"
+   ],
+   "element": "ODM",
+   "attribute": "CreationDateTime"
+  },
+  {
+   "id": "255",
+   "plain_text": "Attribute FileType must be provided for the ODM element.",
+   "rule": "@FileType must be provided.",
+   "message": "Attribute FileType is missing for element ODM.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM"
+   ],
+   "element": "ODM",
+   "attribute": "FileType"
+  },
+  {
+   "id": "256",
+   "plain_text": "The def:CommentOID attribute on the def:Standard element must reference an existing def:CommentDef element.",
+   "rule": "A def:CommentDef element must exist with def:CommentDef/@OID = //def:Standard/@CommentOID.",
+   "message": "There is no def:CommentDef with an OID attribute that matches def:Standard[@Name]/def:CommentOID.",
+   "versions": "2.1 only",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/def:Standards/def:Standard"
+   ],
+   "element": "def:Standard",
+   "attribute": "def:CommentOID"
+  },
+  {
+   "id": "257",
+   "plain_text": "Attribute OID must be provided for the def:Standard element.",
+   "rule": "@OID must be provided.",
+   "message": "Attribute OID is missing for element def:Standard[@Name].",
+   "versions": "2.1 only",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/def:Standards/def:Standard"
+   ],
+   "element": "def:Standard",
+   "attribute": "OID"
+  },
+  {
+   "id": "258",
+   "plain_text": "Child element def:Standard must be provided for the def:Standards element.",
+   "rule": "//def:Standards/def:Standard must be provided.",
+   "message": "Child element def:Standard is missing for element def:Standards.",
+   "versions": "2.1 only",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/def:Standards/def:Standard"
+   ],
+   "element": "def:Standard",
+   "attribute": null
+  },
+  {
+   "id": "259",
+   "plain_text": "The value of attribute ID must start with either a letter or underscore (_), and may contain only letters, digits, underscores, hyphens and periods.",
+   "rule": "The value of @ID must start with either a letter or underscore (_), and may contain only letters, digits, underscores, hyphens and periods.",
+   "message": "The value of attribute ID[@ID] does not start with either a letter or underscore (_) or contains characters other than letters, digits, underscores, hyphens and periods.",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/def:leaf",
+    "/ODM/Study/MetaDataVersion/ItemGroupDef/def:leaf"
+   ],
+   "element": "def:leaf",
+   "attribute": "ID"
+  },
+  {
+   "id": "260",
+   "plain_text": "The value of the Repeating attribute must be \"No\", when IsReferenceData=\"Yes\".",
+   "rule": "The value of the @Repeating attribute must be \"No\", when @IsReferenceData=\"Yes\".",
+   "message": "The value of Repeating[@Repeating] must be \"No\" when IsReferenceData=\"Yes\".",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef"
+   ],
+   "element": "ItemGroupDef",
+   "attribute": "Repeating"
+  },
+  {
+   "id": "261",
+   "plain_text": "Value of the Name attribute in the def:SubClass must be one of the values from the CDISC/NCI subclass codelists.",
+   "rule": "Value of def:SubClass/@Name must be in the CDISC/NCI Subclass codelists, with C-Codes C165635, C165636, C176227, and any other subclass C-Code that is included in the applicable schema.",
+   "message": "The value of SubClass Name [@Name] for dataset [$ParentItemGroupDef/@Name] is not in the CDISC/NCI subclass codelists.",
+   "versions": "2.1 only",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef/def:Class/def:SubClass"
+   ],
+   "element": "def:SubClass",
+   "attribute": "Name"
+  },
+  {
+   "id": "262",
+   "plain_text": "Value of the ParentClass attribute in the def:Class must be one of the values from the CDISC/NCI Class or Subclass codelists.",
+   "rule": "Value of def:SubClass/@ParentClass must be in the CDISC/NCI Class, with C-Code C103329, Subclass codelists, with C-Codes C165635, C165636, C176227 or any other subclass C-Code that is included in the applicable schema.",
+   "message": "The value of SubClass ParentClass [@ParentClass] for dataset [$ParentItemGroupDef/@Name] is not in the CDISC/NCI class or subclass codelists.",
+   "versions": "2.1 only",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef/def:Class/def:SubClass"
+   ],
+   "element": "def:SubClass",
+   "attribute": "ParentClass"
+  },
+  {
+   "id": "263",
+   "plain_text": "The version identifier must match a version identifier used in the standard.",
+   "rule": "@Version must match a version identifier available for @Name.",
+   "message": "The version identifier value is not a valid value for the standard def:Standard[@Name] .",
+   "versions": "Both 2.0 and 2.1",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/def:Standards/def:Standard"
+   ],
+   "element": "def:Standard",
+   "attribute": "Version"
+  },
+  {
+   "id": "264",
+   "plain_text": "The value of the Status attribute must be one of the values from the CDISC/NCI standard Status codelist included in the Define-XML Controlled Terminology.",
+   "rule": "The value of @Status must be in the CDISC/NCI Standard Status codelist with C-Code C172332.",
+   "message": "The value of Standard Status [@Status] is not in the CDISC/NCI Standard Status codelist (C-Code C172332) for Define-XML.",
+   "versions": "2.1 only",
+   "source_type": "Schema",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/def:Standards/def:Standard"
+   ],
+   "element": "def:Standard",
+   "attribute": "Status"
+  },
+  {
+   "id": "265",
+   "plain_text": "The value of the English dataset's description must match the one specified in the CDISC standard for an ItemGroupDef element that represents a dataset defined as following an SDTMIG or SENDIG standard.",
+   "rule": "//ItemGroupDef/Description/TranslatedText, when @xml:lang is not provided or @xml:lang=\"en\", must match the one specified in the CDISC standard referenced by def:Standard/@Name and def:Standard/@Version, where def:Standard/@Name begins with \"SDTM\" or \"SEND\" and ItemGroupDef[@def:StandardOID = def:Standard/@OID].",
+   "message": "The English dataset's description for ItemGroupDef[@Name] does not follow the standard [def:Standard/[OID=ItemGroupDef/@def:StandardOID]/@Name] [def:Standard[OID=ItemGroupDef/@def:StandardOID]/@Version].",
+   "versions": "2.1 only",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemGroupDef/Description/TranslatedText"
+   ],
+   "element": "Description",
+   "attribute": null
+  },
+  {
+   "id": "266",
+   "plain_text": "The value of an English variable's description must match the one specified in the CDISC standard for an ItemDef element that represents a dataset's variable defined as following an SDTMIG or SENDIG standard.",
+   "rule": "//ItemDef/Description/TranslatedText, when @xml:lang is not provided or @xml:lang=\"en\", must match the one specified in the CDISC standard referenced by def:Standard/@Name and def:Standard/@Version, where def:Standard/@Name begins with \"SDTM\" or \"SEND\" .",
+   "message": "The English variable's description for ItemGroupDef[@Name], ItemDef[@Name] does not follow the def:Standard[OID=ItemGroupDef/@def:StandardOID]/@Name and def:Standard[OID=ItemGroupDef/@def:StandardOID]/@Version.",
+   "versions": "2.1 only",
+   "source_type": "Specification",
+   "paths": [
+    "/ODM/Study/MetaDataVersion/ItemDef/Description/TranslatedText"
+   ],
+   "element": "Description",
+   "attribute": null
+  }
+ ]
+}

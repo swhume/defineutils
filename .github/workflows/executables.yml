@@ -107,8 +107,9 @@ jobs:
           Copy-Item -Recurse packaging\dist\defineutils $copy
           .\packaging\windows_signing.ps1 -Action TrySelfSigned -Dist $copy
           $runs = @("definehtml", "--version"), @("definevalidate", "--version"), @("definepp", "--version"),
-                  @("definerefs", "--version"), @("definemetrics", "--version"),
+                  @("definerefs", "--version"), @("definemetrics", "--version"), @("defineconform", "--version"),
                   @("definevalidate", "-d", "tests\define.xml"),
+                  @("defineconform", "--list-rules"),
                   @("definehtml", "-d", "tests\define.xml", "-o", "$copy\define.html")
           foreach ($run in $runs) {
             $command = $run[0]

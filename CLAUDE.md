@@ -18,19 +18,20 @@ record only what a future session needs to know to avoid getting it wrong.
 
 ## Project Overview
 
-defineutils is a Python package for working with CDISC Define-XML v2.1 files. It provides six modules:
+defineutils is a Python package for working with CDISC Define-XML v2.1 files. It provides seven modules:
 - **definehtml**: Transforms define.xml files to HTML using an embedded XSL stylesheet
 - **validate**: Schema validates define.xml files using embedded XSD schemas
 - **definepp**: Pretty-prints (re-indents) define.xml files
 - **definerefs**: Checks OID reference/definition integrity in define.xml files
 - **metrics**: Reports element counts and file/study metrics for define.xml files
 - **defineview**: Renders a define.xml with definehtml and opens it in the default browser (double-click on Windows)
+- **conformance**: Checks define.xml files against the 225 CDISC Define-XML v2.1 conformance rules
 
 ## Commands
 
 ### Install dependencies
 ```bash
-pip install -e .   # also creates the six commands; re-run after the version, [project.scripts] or
+pip install -e .   # also creates the seven commands; re-run after the version, [project.scripts] or
                    # [project.gui-scripts] changes
 ```
 
@@ -57,8 +58,8 @@ pytest tests/test_definehtml.py::test_transform_to_html_string_basic
 
 ### Run the commands
 Each command is equivalent to `python -m defineutils.<module>` (definevalidate is `defineutils.validate`,
-definemetrics is `defineutils.metrics`); the `python -m` form also works uninstalled from the repo root. Every
-command takes `--version`.
+definemetrics is `defineutils.metrics`, defineconform is `defineutils.conformance`); the `python -m` form also works
+uninstalled from the repo root. Every command takes `--version`.
 ```bash
 # Transform define.xml to HTML (omit -o to write <define name>.html beside the input; add --comments-table,
 # --no-methods-table, --prefixes, --length-format, --codelist-items N as needed)
@@ -80,17 +81,27 @@ definemetrics -d tests/define.xml
 
 # Show a define.xml in the browser: the path is positional (--temp, -o, --no-open as needed)
 defineview tests/define.xml
+
+# Check the conformance rules (add --json, -o, -L, --rules 73,110, --skip-rules as needed; --list-rules needs no -d)
+defineconform -d tests/define.xml
+```
+
+### Regenerate the bundled conformance rules
+```bash
+# from the CDISC spreadsheet (not checked in); the JSON it writes is what gets committed
+python scripts/export_conformance_rules.py Define-XML_v2.1_Conformance_Rules.xlsx defineutils/conformance/rules/define21_rules.json
 ```
 
 ## Architecture
 
-The package is structured as `defineutils` with six submodules:
+The package is structured as `defineutils` with seven submodules:
 - `defineutils/definehtml/` - HTML generation from Define-XML
 - `defineutils/validate/` - Schema validation
 - `defineutils/definepp/` - Pretty-printing
 - `defineutils/definerefs/` - OID reference/definition checking
 - `defineutils/metrics/` - Element counts and file/study metrics
 - `defineutils/defineview/` - Showing a define.xml in the browser
+- `defineutils/conformance/` - Conformance rule checking (with a `rules/` subpackage holding the registry)
 
 Each submodule follows the same pattern:
 - Main class in `<submodule>.py` with a custom exception class
@@ -115,7 +126,7 @@ CLI invariants:
   before writing instead. `tests/test_write_to_folder.py` simulates the Windows error for the other four modules.
 
 **Executables** (`packaging/`, built by `.github/workflows/executables.yml` on Windows x64 and macOS arm64):
-`packaging/defineutils.spec` builds six one-folder executables from `packaging/entry/<command>.py`, passed to one
+`packaging/defineutils.spec` builds seven one-folder executables from `packaging/entry/<command>.py`, passed to one
 shared `COLLECT` so they share one `_internal` folder; `build_executables.py` adds `README.txt` and `LICENSES/` (one
 folder per bundled distribution, found from defineutils' requirements, plus Python and PyInstaller) and zips it.
 - A new command needs an entry script and a `COMMANDS` entry in the spec, as well as `[project.scripts]` (or
@@ -130,6 +141,9 @@ folder per bundled distribution, found from defineutils' requirements, plus Pyth
   - `X utf8`: the executables run in UTF-8 mode, so output redirected on Windows is UTF-8. That is why `run_module`
     also uses `-X utf8`; pip-installed commands on Windows don't, so they may not match it there.
 - Build output goes to `packaging/build/` and `packaging/dist/`, never the top-level `dist/` holding the PyPI files.
+- Build from a **non-editable** install (`pip install .`, as CI does). From an editable install (`pip install -e .`)
+  PyInstaller's module search does not see the package: the build succeeds, the data files are collected, but every
+  command fails at start-up with `No module named 'defineutils.<module>'`. Reinstall editable afterwards.
 - Never add `__init__.py` to `packaging/`: with the repo root on `sys.path` (`python -m pytest`), it would shadow the
   PyPI `packaging` library that pytest and PyInstaller import.
 - A `v*` tag build attaches both zips to that tag's GitHub Release, creating a published release if none exists. The
@@ -297,6 +311,50 @@ table's `Variables` column and `total_variable_refs` count only `len(ItemGroupDe
 differ by design. Exit codes are 0 (report produced), 2 (could not be produced) and 1 (an unexpected exception, with
 the traceback on stderr). 1 never judges the file, because a metrics report describes a file rather than judging it.
 `main()` re-raises `BrokenPipeError` ahead of its `except Exception`, so quitting a pager still exits 0 in `run()`.
+
+**conformance module**: Evaluates the 225 CDISC Define-XML v2.1 conformance rules on an lxml tree, with no odmlib
+checker involved (odmlib drops undeclared children and keeps no line numbers). `DefineConformanceChecker.check()`
+returns a `ConformanceResult` cached on `self._result`; `check_to_string()` / `_to_file()` / `_to_console()` /
+`_to_json()` reuse it, and `all_rules()` (a classmethod) is the registry for `--list-rules`. Loading failures and an
+unwritable report raise `DefineConformanceLoadError`, a subclass of `DefineConformanceError` (also raised for an unknown
+rule id). Exit codes: 0 no rule failed, 1 a rule failed, 2 could not check (including a usage error), **3 an unexpected
+exception** with the traceback on stderr -- the first command with a crash code of its own; `main()` re-raises
+`BrokenPipeError` ahead of its `except Exception`.
+
+The registry (`rules/`): every rule is one `rule(id, element, attribute, select, check, context=, requires=)` call --
+or decorator, for a hand-written check -- in `structure.py`, `datasets.py`, `variables.py`, `codelists.py` or
+`definitions.py`. `select` is an XPath 1.0 expression (prefixes `odm`, `def`, `xlink`; `xml:` only through
+`doc.attr()`, since lxml rejects the xml prefix in an XPath namespace map) choosing the context nodes, and `check(doc,
+node)` yields a `Violation(node, detail)` per offence. Invariants:
+- The CDISC metadata (text, message, source type, versions, paths) is **joined by id** from
+  `rules/define21_rules.json`, the export of the CDISC spreadsheet by `scripts/export_conformance_rules.py`.
+  `rule()` raises at import on a duplicate id or an id missing from the JSON, so the registry cannot drift. The
+  spreadsheet is not checked in; rule 121's empty message cell is filled with its rule text by the export.
+- `rules/__init__.py` imports the rule modules **statically** at its bottom, and the JSON is read through
+  `Path(__file__).parent`: that is what lets the frozen build find them with no `hiddenimports` and no spec change.
+- Expected element order (rule 1, `rules/order.py`) is derived from the odmlib `define_2_1` model by the same
+  by-name resolution `metrics._element_inventory()` uses; following `descriptor.element_class` would give the ODM
+  1.3.2 shapes. Children the table does not know (ARM) are ignored.
+- The enumerations and patterns (`rules/values.py`) are hand-coded from the rule text. Four deliberately differ from
+  the XSD -- `DATA_TYPES` (140: 12 of 22), `CODELIST_DATA_TYPES` (174: no `string`), `METHOD_TYPES` (209), `ORIGIN_TYPES`
+  (160: no `Other`) -- and `tests/test_conformance.py` keeps every other one equal to the schema facet it names in
+  `XSD_TYPES` / `XSD_PATTERNS`, so add a new enumeration to one of those tables.
+- 15 rules carry `requires` (`ct`: 179, 186, 187, 192, 201, 202; `ig`: 67, 97, 98, 99, 149, 263, 265, 266; `datasets`:
+  76) and are never run; 13 carry `context="Submission"` (31, 70, 93, 96, 108, 119, 125, 128, 131, 147, 154, 168,
+  176) and are *not applicable* unless `ODM/@def:Context="Submission"`. The test suite pins both sets.
+- Rules about "the variable" (55, 147) follow **direct** ItemGroupDef/ItemRef references only; the value-level
+  ItemDefs of QVAL are also named QVAL, and the CDISC ADaM sample gives its value-level ItemDefs no SASFieldName.
+  `doc.owning_item_groups()` follows the value-list hop and is for rules that mean it (84, 142).
+- Parsing is `etree.XMLParser(remove_comments=True)`, as in `validate`, so the two agree on lines and child positions.
+  A document using the Define-XML 2.0 namespace anywhere is refused (`DefineConformanceLoadError`); a non-ODM root
+  loads and fails rule 2 alone.
+- `Document.path()` drops the ODM/Study segments itself rather than splitting the finished path on `/`: the CDISC
+  ADaM sample's Study OID is `CDISC-Sample/ADaM`.
+
+Tests: `tests/define_conformant.xml` is a minimal Submission-context document that passes all 210 evaluated rules; the
+`MUTATIONS` table in `tests/test_conformance.py` holds one lxml edit of it per implemented rule with the exact set of
+rules that edit must fail (knock-ons included) -- a new rule needs an entry, or the coverage test fails. The baseline
+on `tests/define.xml` is 73×2, 153×11, 159×30, 240×1, 249×11; `tests/define-adam.xml` passes every evaluated rule.
 
 **defineview module**: What double-clicking a define.xml runs on Windows, once the user has chosen defineview.exe
 for it with "Open with" (README.md has the user's steps; there is no installer or registry code). `DefineViewer`

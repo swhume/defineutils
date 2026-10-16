@@ -19,6 +19,7 @@ COMMANDS = {"definehtml": "defineutils.definehtml",
             "definepp": "defineutils.definepp",
             "definerefs": "defineutils.definerefs",
             "definemetrics": "defineutils.metrics",
+            "defineconform": "defineutils.conformance",
             "defineview": "defineutils.defineview"}
 
 # a command that waits on a message box, which no one can close in CI, fails rather than hanging the run

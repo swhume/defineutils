@@ -17,7 +17,8 @@ DEFINES = ["define.xml", "define-adam.xml"]
 
 # each report command, with the options that change what it prints
 REPORTS = [("definevalidate",), ("definevalidate", "--json"), ("definepp",), ("definerefs",),
-           ("definerefs", "--json"), ("definemetrics",), ("definemetrics", "--json")]
+           ("definerefs", "--json"), ("definemetrics",), ("definemetrics", "--json"), ("defineconform",),
+           ("defineconform", "--json")]
 
 # the tail of the schema path definevalidate loads by default, wherever its install or bundle is
 DEFAULT_SCHEMA = ("defineutils", "validate", "schema", "cdisc-define-2.1", "define2-1-0.xsd")

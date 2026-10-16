@@ -8,6 +8,7 @@ Tools for CDISC Define-XML v2.1 files. Python does not need to be installed.
   definepp        pretty-print (re-indent) a define.xml
   definerefs      check OID references and definitions
   definemetrics   report element counts and study metrics
+  defineconform   check a define.xml against the CDISC Define-XML v2.1 conformance rules
   defineview      show a define.xml in the browser (on Windows, with a double-click: see below)
 
 Keep the commands and the _internal folder together: the commands need it to run.
