@@ -1,6 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
 """
-PyInstaller build definition for the defineutils executables: six one-folder executables passed to one shared COLLECT,
+PyInstaller build definition for the defineutils executables: seven one-folder executables passed to one shared COLLECT,
 so they share a single _internal runtime folder. Build with packaging/build_executables.py, which also adds README.txt
 and LICENSES/ and zips the result.
 
@@ -16,7 +16,7 @@ from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 from defineutils import __version__
 
 # each command is built from packaging/entry/<command>.py, which calls the run() its console or GUI script calls
-COMMANDS = ["definehtml", "definevalidate", "definepp", "definerefs", "definemetrics", "defineview"]
+COMMANDS = ["definehtml", "definevalidate", "definepp", "definerefs", "definemetrics", "defineview", "defineconform"]
 
 # defineview is what opening a define.xml with a double-click runs, so on Windows it is built windowed and no console
 # window opens; it shows its errors on a page or in a message box instead. Elsewhere it keeps the console bootloader

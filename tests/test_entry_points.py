@@ -13,13 +13,14 @@ ENTRY_MODULES = {"definehtml": "defineutils.definehtml.__main__",
                  "definepp": "defineutils.definepp.__main__",
                  "definerefs": "defineutils.definerefs.__main__",
                  "definemetrics": "defineutils.metrics.__main__",
+                 "defineconform": "defineutils.conformance.__main__",
                  "defineview": "defineutils.defineview.__main__"}
 
 # the commands installed as GUI scripts, which on Windows start without a console window
 GUI_SCRIPTS = ["defineview"]
 
 # the commands that print a report to the console, so can meet a pager that quits early
-PAGED = ["definevalidate", "definepp", "definerefs", "definemetrics"]
+PAGED = ["definevalidate", "definepp", "definerefs", "definemetrics", "defineconform"]
 
 
 def _installed():

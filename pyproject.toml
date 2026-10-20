@@ -33,6 +33,7 @@ definevalidate = "defineutils.validate.__main__:run"
 definepp = "defineutils.definepp.__main__:run"
 definerefs = "defineutils.definerefs.__main__:run"
 definemetrics = "defineutils.metrics.__main__:run"
+defineconform = "defineutils.conformance.__main__:run"
 
 [project.gui-scripts]
 # a GUI script: on Windows pip installs it with a windowed launcher, so opening a define.xml with it opens no console
@@ -41,11 +42,14 @@ defineview = "defineutils.defineview.__main__:run"
 
 [tool.setuptools]
 packages = ["defineutils", "defineutils.definehtml", "defineutils.validate", "defineutils.definepp",
-            "defineutils.definerefs", "defineutils.metrics", "defineutils.defineview"]
+            "defineutils.definerefs", "defineutils.metrics", "defineutils.defineview",
+            "defineutils.conformance", "defineutils.conformance.rules"]
 
 [tool.setuptools.package-data]
-# Include non-Python files needed at runtime (schemas, XSL)
+# Include non-Python files needed at runtime (schemas, XSL, the conformance rules). The frozen build collects its
+# data files from the installed package, so a file missing here is missing from the executables too
 "defineutils.definehtml" = ["define2-1.xsl", "define2-1.xsl.LICENSE"]
+"defineutils.conformance" = ["rules/*.json"]
 "defineutils.validate" = [
   "schema/cdisc-arm-1.0/*.xsd",
   "schema/cdisc-define-2.1/*.xsd",
@@ -56,3 +60,9 @@ packages = ["defineutils", "defineutils.definehtml", "defineutils.validate", "de
 
 [tool.setuptools.exclude-package-data]
 "*" = ["tests/*", "tests"]
+
+[tool.coverage.run]
+# the CLI tests run each command in a child process. pytest-cov 7 no longer measures child processes, so coverage's
+# subprocess patch does; without it each __main__.py reads as largely untested
+source = ["defineutils"]
+patch = ["subprocess"]

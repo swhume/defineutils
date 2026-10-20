@@ -1,14 +1,20 @@
 # defineutils
 
+[![License](https://img.shields.io/github/license/swhume/defineutils)](https://github.com/swhume/defineutils/blob/main/LICENSE)
+[![PyPI version](https://img.shields.io/pypi/v/defineutils)](https://pypi.org/project/defineutils/)
+![Status: under development](https://img.shields.io/badge/status-under%20development-orange)
+[![Coverage](https://codecov.io/gh/swhume/defineutils/branch/main/graph/badge.svg)](https://codecov.io/gh/swhume/defineutils)
+
 ## CDISC Define-XML v2.1 utilities
 
-The defineutils package currently includes 6 modules:
+The defineutils package currently includes 7 modules:
 1. `definehtml.py`: transforms a define.xml into a define.html using the stylesheet
 2. `validate.py`: schema validates a define.xml file
 3. `definepp.py`: pretty-prints (re-indents) a define.xml file
 4. `definerefs.py`: checks the OID reference/definition integrity of a define.xml file
 5. `metrics.py`: reports metrics for a define.xml file
 6. `defineview.py`: renders a define.xml with definehtml and opens it in the default browser
+7. `conformance.py`: checks a define.xml against the CDISC Define-XML v2.1 conformance rules
 
 The `definehtml.py` module includes the Define-XML v2.1 style sheet to simplify usage. It generates a define.html file,
 or alternatively returns the HTML as a string. It renders Define-XML v2.1 only: a file in another Define-XML version,
@@ -46,6 +52,15 @@ the default browser, or opens a page saying why the file could not be shown. On 
 open define.xml files lets a double-click on a define.xml show it in the browser; see
 [Opening a define.xml with a double-click](#opening-a-definexml-with-a-double-click-windows).
 
+The `conformance.py` module checks a define.xml against the 225 published CDISC Define-XML v2.1 conformance rules and
+reports each failure under its CDISC rule id, with the rule text and the line and path of every occurrence. It
+answers the question a reviewer asks -- which rules does this define.xml break, and where? -- in one report: the 210
+rules that can be decided from the document itself are evaluated, the 13 that apply only in the context of a
+submission are evaluated when the document declares `def:Context="Submission"`, and the 15 that need published CDISC
+controlled terminology, implementation-guide metadata or the datasets are listed as not evaluated, so the report
+accounts for every rule. The rules are evaluated on the XML directly, so a non-conformant file does not need a
+permissive mode to be checked. The report can be printed to the console, written to a text file, or emitted as JSON.
+
 ## Installing defineutils
 
 There are three ways to get defineutils:
@@ -59,8 +74,8 @@ defineutils needs Python 3.10 or later. Install it with pip:
 pip install defineutils
 ```
 
-Installing adds six commands -- definehtml, definevalidate, definepp, definerefs, definemetrics and defineview --
-described in
+Installing adds seven commands -- definehtml, definevalidate, definepp, definerefs, definemetrics, defineconform and
+defineview -- described in
 [Running defineutils from the Command-line](#running-defineutils-from-the-command-line).
 
 If you only need the commands and do not have Python, [uv](https://docs.astral.sh/uv/getting-started/installation/)
@@ -75,7 +90,7 @@ to pick it up. `uv tool upgrade defineutils` installs a newer release later.
 
 ### Downloading the commands for Windows or macOS
 
-The six commands are also built as programs that run without Python. Download the zip for your computer from the
+The seven commands are also built as programs that run without Python. Download the zip for your computer from the
 [latest release](https://github.com/swhume/defineutils/releases/latest):
 
 | Computer | Download |
@@ -85,7 +100,7 @@ The six commands are also built as programs that run without Python. Download th
 
 On Linux or an Intel Mac, install with uv or pip instead.
 
-The zip holds a defineutils folder with the six commands, the _internal folder they need to run, a README.txt and a
+The zip holds a defineutils folder with the seven commands, the _internal folder they need to run, a README.txt and a
 LICENSES folder. Keep _internal beside the commands. The commands are not code-signed, so Windows and macOS warn about
 them:
 - **Windows**: before unzipping, right-click the downloaded zip, choose Properties, tick Unblock and click OK. If
@@ -147,9 +162,9 @@ now (`./defineview ~/studies/define.xml`); opening a define.xml with a double-cl
 
 ## Using defineutils
 
-Currently, defineutils contains 6 modules: one for generating an HTML rendition, one for schema validation, one
-for pretty-printing, one for OID reference/definition checking, one for reporting metrics, and one that opens a
-define.xml in the browser.
+Currently, defineutils contains 7 modules: one for generating an HTML rendition, one for schema validation, one
+for pretty-printing, one for OID reference/definition checking, one for reporting metrics, one that opens a
+define.xml in the browser, and one that checks the CDISC conformance rules.
 
 Example code used to generate a define.html from a define.xml:
 ```python
@@ -299,6 +314,34 @@ Note that the element counts are per element type across the whole document, so 
 dataset variables and the value-level ItemRefs under each def:ValueListDef. The `Variables` column in the dataset
 table, and the `total_variable_refs` property, count only the ItemRefs belonging to an ItemGroupDef.
 
+Example code used to check a define.xml against the Define-XML v2.1 conformance rules:
+```python
+from pathlib import Path
+from defineutils.conformance import DefineConformanceChecker, DefineConformanceError
+
+try:
+    checker = DefineConformanceChecker(Path(__file__).parent.joinpath("define.xml"))
+    checker.check_to_console()
+    for finding in checker.check().findings:
+        print(finding.rule, finding.element, len(finding.locations))
+except DefineConformanceError as e:
+    print(e)
+```
+
+The above code loads the define.xml with lxml and evaluates every conformance rule against it. `check()` returns a
+ConformanceResult: `findings` holds one Finding per failed rule, in ascending rule id order, each carrying the CDISC
+`rule` id, the `element` and `attribute` it is about, the rule text as its `message`, the published CDISC
+`cdisc_message`, and a Location per occurrence with the OID-decorated `path`, the source `line` and a one-sentence
+`detail` saying what is wrong there; `passed`, `not_applicable` (the Submission-only rules, when the document is not a
+submission) and `not_evaluated` (the rules that need CDISC controlled terminology, implementation-guide metadata or the
+datasets, with the reason) account for the rest of the 225. The `has_errors`, `occurrence_count` and
+`evaluated_count` properties summarise it. The result is cached, so the report methods do not re-parse the file. Use
+`check_to_string()` for the formatted listing, `check_to_file()` to write it to a file, `check_to_console()` to print
+it, and `check_to_json()` for machine-readable results; pass `rules=["73", "110"]` to evaluate a subset, or
+`skip_rules=[...]` to leave rules out, and `DefineConformanceChecker.all_rules()` lists the registry with each
+rule's text. A file that is missing, not well-formed or a Define-XML 2.0 document is reported via the
+DefineConformanceLoadError exception, a subclass of DefineConformanceError.
+
 ## Running defineutils from the Command-line
 
 Installing defineutils, or downloading the commands, gives a command for each module:
@@ -310,6 +353,7 @@ Installing defineutils, or downloading the commands, gives a command for each mo
 | `definepp` | `defineutils.definepp` | pretty-prints a define.xml |
 | `definerefs` | `defineutils.definerefs` | checks the OID references and definitions in a define.xml |
 | `definemetrics` | `defineutils.metrics` | reports the metrics for a define.xml |
+| `defineconform` | `defineutils.conformance` | checks a define.xml against the Define-XML v2.1 conformance rules |
 | `defineview` | `defineutils.defineview` | shows a define.xml in the default browser |
 
 Each command does the same as running its module with Python's -m switch, so `definehtml -d tests/define.xml` and
@@ -513,6 +557,93 @@ definemetrics sets an exit code: 0 when the report was produced, and 2 when it c
 missing or would not load, or the report could not be written. 1 means only that an unexpected error occurred, and its
 traceback is printed to stderr. Unlike definevalidate and definerefs, definemetrics never exits 1 to judge the
 define.xml, because a metrics report describes a define.xml rather than judging it.
+
+The defineconform command checks a define.xml against the CDISC Define-XML v2.1 conformance rules. Use the -d
+parameter to specify the define.xml file path. Without -o the listing goes to the console; with -o it is written to
+the given file. The --json switch emits machine-readable results instead of the listing, -L sets how many example
+locations are shown per finding (0 shows all), --rules evaluates only the given rule ids and --skip-rules leaves
+rule ids out, and --list-rules prints the 225 rules, one per line, without checking a file.
+
+```commandline
+# print the listing to the console
+defineconform -d tests/define.xml
+
+# save the listing to a file
+defineconform -d tests/define.xml -o conformance_report.txt
+
+# machine-readable results for CI or other tooling
+defineconform -d tests/define.xml --json
+
+# two rules only, with every location listed
+defineconform -d tests/define.xml --rules 73,159 -L 0
+
+# every rule but these
+defineconform -d tests/define.xml --skip-rules 153,249
+
+# the rules themselves: id, how each is evaluated, element/attribute, source, versions and text
+defineconform --list-rules
+```
+
+The listing names the file, its Define-XML version and context, then each failed rule with its CDISC id, the rule text
+and the line and path of each occurrence, and accounts for the rules that were not evaluated:
+
+```
+Define-XML conformance check
+  File:     tests/define.xml
+  Version:  Define-XML 2.1.9    Context: Other
+  Rules:    CDISC Define-XML v2.1 Conformance Rules (225)
+
+ERRORS (5 rules, 55 occurrences)
+
+  [73]   ItemRef/@MethodOID   (2 occurrences)
+         The MethodOID attribute must be provided on the  ItemRef element when the Origin Type attribute on the corresponding ItemDef element is "Derived".
+         - line 556  MetaDataVersion[MDV.CDISC01_1.1.SDTMIG.3.1.2.SDTM.1.2_X]/ItemGroupDef[IG.EC]/ItemRef[IT.EC.EXDOSE]: ItemDef IT.EC.EXDOSE has def:Origin/@Type="Derived" but the ItemRef has no @MethodOID
+         - line 557  MetaDataVersion[MDV.CDISC01_1.1.SDTMIG.3.1.2.SDTM.1.2_X]/ItemGroupDef[IG.EC]/ItemRef[IT.EC.EXDOSU]: ItemDef IT.EC.EXDOSU has def:Origin/@Type="Derived" but the ItemRef has no @MethodOID
+
+  [153]  CodeList/@def:IsNonStandard   (11 occurrences)
+         Attribute def:IsNonStandard must be provided for a CodeList element where CDISC Controlled Terminology is required and there is no Alias provided.
+         - line 2133  MetaDataVersion[MDV.CDISC01_1.1.SDTMIG.3.1.2.SDTM.1.2_X]/CodeList[CL.ARM]: @def:IsNonStandard is missing, but the CodeList has no Alias[@Context="nci:ExtCodeID"]
+         - line 2139  MetaDataVersion[MDV.CDISC01_1.1.SDTMIG.3.1.2.SDTM.1.2_X]/CodeList[CL.ARMCD]: @def:IsNonStandard is missing, but the CodeList has no Alias[@Context="nci:ExtCodeID"]
+         ... and 9 more
+
+  [159]  def:Origin/@Type   (30 occurrences)
+         ItemDef which has a def:Origin element with Type = 'Collected' must have a reference to a document which corresponds to AnnotatedCRF
+         - line 815  MetaDataVersion[MDV.CDISC01_1.1.SDTMIG.3.1.2.SDTM.1.2_X]/ItemDef[IT.DM.BRTHDTC]/def:Origin: is @Type="Collected" with @Source="Investigator", but the document has no def:AnnotatedCRF to reference
+         - line 840  MetaDataVersion[MDV.CDISC01_1.1.SDTMIG.3.1.2.SDTM.1.2_X]/ItemDef[IT.DM.ETHNIC]/def:Origin: is @Type="Collected" with @Source="Investigator", but the document has no def:AnnotatedCRF to reference
+         ... and 28 more
+
+  [240]  ItemGroupDef/@def:CommentOID   (1 occurrence)
+         The def:CommentOID attribute must be provided when the value of the ItemGroupDef def:HasNoData attribute is "Yes".
+         - line 759  MetaDataVersion[MDV.CDISC01_1.1.SDTMIG.3.1.2.SDTM.1.2_X]/ItemGroupDef[IG.SUPPVS]: @def:CommentOID is missing, but @def:HasNoData is "Yes"
+
+  [249]  Alias/@Context   (11 occurrences)
+         There must be an Alias element with the Context Attribute nci:ExtCodeID when the Codelist includes a reference to a CDISC Controlled Terminology Standard.
+         - line 2133  MetaDataVersion[MDV.CDISC01_1.1.SDTMIG.3.1.2.SDTM.1.2_X]/CodeList[CL.ARM]: has no Alias[@Context="nci:ExtCodeID"], but @def:StandardOID is present
+         - line 2139  MetaDataVersion[MDV.CDISC01_1.1.SDTMIG.3.1.2.SDTM.1.2_X]/CodeList[CL.ARMCD]: has no Alias[@Context="nci:ExtCodeID"], but @def:StandardOID is present
+         ... and 9 more
+
+NOT APPLICABLE (13 rules)
+  Require ODM/@def:Context="Submission"; this document declares "Other":
+  31, 70, 93, 96, 108, 119, 125, 128, 131, 147, 154, 168, 176
+
+NOT EVALUATED (15 rules)
+  Need CDISC controlled terminology:      179, 186, 187, 192, 201, 202
+  Need implementation-guide metadata:     67, 97, 98, 99, 149, 263, 265, 266
+  Need the datasets:                      76
+
+SUMMARY
+  225 rules: 197 evaluated, 192 passed, 5 failed (55 occurrences), 13 not applicable, 15 not evaluated
+  File: tests/define.xml
+```
+
+The listing above was produced with `-L 2`. The CDISC sample above declares `def:Context="Other"`, so the 13
+submission-only rules are not applicable to it; a define.xml that declares `Submission` has them evaluated too, as
+tests/define-adam.xml does.
+
+defineconform sets an exit code, like definevalidate and definerefs, so it can gate a CI job: 0 when no rule failed,
+1 when at least one rule failed, 2 when the check could not be run at all -- the define.xml is missing, not
+well-formed or a Define-XML 2.0 document, a rule id is unknown, or the report could not be written -- and 3 when an
+unexpected error occurred, with its traceback printed to stderr, so a crash is never mistaken for a failed check.
 
 If you are running defineutils from the source code, install it into a virtual environment in editable mode to create
 the commands, and activate that environment before running them. Re-run the install after the version or the commands

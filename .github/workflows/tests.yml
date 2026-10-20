@@ -1,0 +1,38 @@
+# Runs the tests with coverage on Ubuntu and uploads the report to Codecov, which serves the README's coverage badge.
+# The upload needs the CODECOV_TOKEN repository secret, the repository's upload token on codecov.io. The Windows and
+# macOS test runs, and the runs against the executables, are in executables.yml.
+name: tests
+
+on:
+  push:
+    branches: ["**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      # pytest-cov 7 requires coverage 7.10.6 or later, which has the subprocess patch pyproject.toml turns on
+      - name: Install defineutils and the test requirements
+        run: python -m pip install -e . pytest "pytest-cov>=7"
+
+      # the coverage settings, including measuring the CLI tests' child processes, are in pyproject.toml
+      - name: Test with coverage
+        run: python -m pytest -q --cov --cov-report=xml
+
+      # fails the job when the upload fails, so a missing or wrong token shows here rather than as a stale badge
+      - name: Upload the coverage report
+        uses: codecov/codecov-action@v7
+        with:
+          files: coverage.xml
+          fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}
