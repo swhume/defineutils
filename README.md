@@ -1,5 +1,10 @@
 # defineutils
 
+[![License](https://img.shields.io/github/license/swhume/defineutils)](https://github.com/swhume/defineutils/blob/main/LICENSE)
+[![PyPI version](https://img.shields.io/pypi/v/defineutils)](https://pypi.org/project/defineutils/)
+![Status: under development](https://img.shields.io/badge/status-under%20development-orange)
+[![Coverage](https://codecov.io/gh/swhume/defineutils/branch/main/graph/badge.svg)](https://codecov.io/gh/swhume/defineutils)
+
 ## CDISC Define-XML v2.1 utilities
 
 The defineutils package currently includes 7 modules:

@@ -41,7 +41,15 @@ pytest
 # run the CLI tests against a folder of commands (installed console scripts, or an unzipped frozen build); this also
 # runs tests/test_commands_match_modules.py, which compares each command's output with python -m
 DEFINEUTILS_BIN=.venv/bin pytest
+# with coverage (needs pytest-cov >= 7); what .github/workflows/tests.yml runs on Ubuntu before uploading to Codecov
+python -m pytest --cov --cov-report=term
 ```
+
+Coverage (`[tool.coverage.run]` in `pyproject.toml`, the README's Codecov badge):
+- The CLI tests run each command in a child process, so `patch = ["subprocess"]` must stay: pytest-cov 7 dropped its
+  own subprocess measurement, and without the patch each `__main__.py` reads as largely untested (96% overall vs 93%).
+- `tests.yml`'s upload needs the `CODECOV_TOKEN` repository secret and has `fail_ci_if_error: true`, so the job fails
+  rather than leaving the badge stale.
 
 ### Build the executables
 ```bash

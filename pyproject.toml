@@ -60,3 +60,9 @@ packages = ["defineutils", "defineutils.definehtml", "defineutils.validate", "de
 
 [tool.setuptools.exclude-package-data]
 "*" = ["tests/*", "tests"]
+
+[tool.coverage.run]
+# the CLI tests run each command in a child process. pytest-cov 7 no longer measures child processes, so coverage's
+# subprocess patch does; without it each __main__.py reads as largely untested
+source = ["defineutils"]
+patch = ["subprocess"]
