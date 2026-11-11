@@ -90,29 +90,30 @@ rule("51", "def:SupplementalDoc", None, MDV, max_one_child("def:SupplementalDoc"
 rule("54", "def:DocumentRef", None, "//def:SupplementalDoc", required_child("def:DocumentRef"))
 
 
-@rule("44", "def:PDFPageRef", None,
-      "//def:Origin[@Type='Collected'][@Source='Investigator' or @Source='Subject']/def:DocumentRef")
-def page_ref_required_for_collected_origin(doc, document_ref):
-    if not doc.children(document_ref, "def:PDFPageRef"):
-        source = doc.attr(document_ref.getparent(), "Source")
-        yield Violation(document_ref, f"has no def:PDFPageRef child element, but the def:Origin is "
-                                      f'@Type="Collected" with @Source="{source}"')
+# the origin needs a page reference, as the Rule column and the spec word it: one under any of
+# its def:DocumentRefs, and an origin with no def:DocumentRef fails here as well as under 159
+@rule("44", "def:PDFPageRef", None, "//def:Origin[@Type='Collected'][@Source='Investigator' or @Source='Subject']")
+def page_ref_required_for_collected_origin(doc, origin):
+    if not doc.xpath(origin, "def:DocumentRef/def:PDFPageRef"):
+        yield Violation(origin, f'has no def:DocumentRef/def:PDFPageRef, but it is @Type="Collected" with '
+                                f'@Source="{doc.attr(origin, "Source")}"')
 
 
-def _physical_without_page_refs(doc, page_ref) -> bool:
-    return doc.attr(page_ref, "PageRefs") is None and doc.attr(page_ref, "Type") == "PhysicalRef"
+def _without_page_refs(doc, page_ref) -> bool:
+    return doc.attr(page_ref, "PageRefs") is None
 
 
 rule("45", "def:PDFPageRef", "Type", PAGE_REF, allowed_values("Type", V.PDF_PAGE_TYPES))
 rule("46", "def:PDFPageRef", "Type", PAGE_REF, required_attr("Type"))
 rule("47", "def:PDFPageRef", "FirstPage", PAGE_REF, attr_matches("FirstPage", V.INTEGER, INTEGER))
+# 48 and 50 apply whatever the Type, as the spec's def:PDFPageRef table and P21's DD0037 have it,
+# rather than the Rule column's "and Type is PhysicalRef": otherwise a NamedDestination with no
+# PageRefs passes
 rule("48", "def:PDFPageRef", "FirstPage", PAGE_REF,
-     present_when("FirstPage", _physical_without_page_refs,
-                  because='@PageRefs is absent and @Type is "PhysicalRef"'))
+     present_when("FirstPage", _without_page_refs, because="@PageRefs is absent"))
 rule("49", "def:PDFPageRef", "LastPage", PAGE_REF, attr_matches("LastPage", V.INTEGER, INTEGER))
 rule("50", "def:PDFPageRef", "LastPage", PAGE_REF,
-     present_when("LastPage", _physical_without_page_refs,
-                  because='@PageRefs is absent and @Type is "PhysicalRef"'))
+     present_when("LastPage", _without_page_refs, because="@PageRefs is absent"))
 
 # -- Description and TranslatedText ------------------------------------------------------------
 

@@ -6,11 +6,17 @@ message, source type and version applicability are joined by id from define21_ru
 bundled export of the CDISC spreadsheet, so a rule id that is not in the JSON -- or is
 registered twice -- fails at import, and the registry cannot drift from the published rules.
 
+Extra checks -- defineutils' extensions to the CDISC rules -- are registered with extra_rule()
+instead. Their ids are X1, X2, ..., their text and basis are given at registration rather than
+joined from the JSON, and they are kept in EXTRAS, apart from REGISTRY, so the CDISC rule counts
+stay exact.
+
 The rule modules are imported at the bottom of this file, statically: PyInstaller's analysis
 finds them that way, with no hiddenimports, and the JSON is read through Path(__file__), which
 the frozen build resolves inside its _internal folder.
 """
 import json
+import re
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -19,6 +25,10 @@ from typing import Union
 METADATA_FILE = Path(__file__).parent / "define21_rules.json"
 
 SUBMISSION = "Submission"
+
+EXTRAS_SOURCE = "defineutils extra checks"
+EXTENSION = "Extension"                 # an extra check's source type, beside "Schema" and "Specification"
+EXTRA_ID = re.compile(r"X[1-9]\d*")
 
 # what a rule that cannot be decided from the document needs
 NEEDS_CT = "ct"
@@ -40,14 +50,15 @@ Check = Callable[[object, object], Iterable[Violation]]
 
 @dataclass(frozen=True)
 class Rule:
-    id: str                             # the spreadsheet's Rule Identifier, e.g. "110"
+    id: str                             # the spreadsheet's Rule Identifier, e.g. "110", or an extra check's "X1"
     element: str                        # display name, e.g. "ItemGroupDef", "def:PDFPageRef"
     attribute: Union[str, None]         # "SASDatasetName", "def:IsNonStandard", "xml:lang", None
     select: str                         # XPath 1.0 selecting the context nodes
     check: Check
     context: Union[str, None] = None    # "Submission": evaluated only when ODM/@def:Context matches
     requires: Union[str, None] = None   # NEEDS_CT | NEEDS_IG | NEEDS_DATASETS: registered, never run
-    meta: dict = field(default_factory=dict, compare=False)   # the CDISC record from the JSON
+    extra: bool = False                 # an extra check, not a CDISC rule
+    meta: dict = field(default_factory=dict, compare=False)   # the CDISC record from the JSON, or an extra's
 
     @property
     def text(self) -> str:
@@ -75,20 +86,27 @@ class Rule:
         return self.meta["paths"]
 
     @property
+    def basis(self) -> Union[str, None]:
+        """what an extra check rests on, e.g. "P21 OD0042; ODM 1.3 Schematron"; None for a CDISC rule"""
+        return self.meta.get("basis")
+
+    @property
     def subject(self) -> str:
         """element/@attribute, as the listings show the rule"""
         return f"{self.element}/@{self.attribute}" if self.attribute else self.element
 
     @property
     def status(self) -> str:
-        """document | submission | needs ct|ig|datasets: how the rule is evaluated"""
+        """document | submission | needs ct|ig|datasets | extra: how the rule is evaluated"""
+        if self.extra:
+            return "extra"
         if self.requires:
             return f"needs {self.requires}"
         return "submission" if self.context == SUBMISSION else "document"
 
     @property
     def sort_key(self) -> int:
-        return int(self.id)
+        return int(self.id[1:]) if self.extra else int(self.id)
 
 
 class RegistryError(Exception):
@@ -105,6 +123,7 @@ RULES_SOURCE = _metadata["source"]
 METADATA = {record["id"]: record for record in _metadata["rules"]}
 
 REGISTRY = {}
+EXTRAS = {}
 
 
 def rule(id: str, element: str, attribute: Union[str, None], select: str, check: Check = None, *,
@@ -137,23 +156,52 @@ def rule(id: str, element: str, attribute: Union[str, None], select: str, check:
     return REGISTRY[id]
 
 
+def extra_rule(id: str, element: str, attribute: Union[str, None], select: str, check: Check, *,
+               text: str, basis: str) -> Rule:
+    """
+    registers an extra check, an extension to the CDISC rules
+    :param id: "X" and a number, so it can never be taken for a CDISC rule id
+    :param element: the element the check is about, as displayed
+    :param attribute: the attribute the check is about, as written in the document, or None
+    :param select: XPath 1.0 selecting the context nodes the check runs on
+    :param check: callable(doc, node) yielding Violations
+    :param text: the requirement, worded as the CDISC plain text is; the finding's message
+    :param basis: what the requirement rests on: the specification, a P21 rule, a Schematron
+    :return: the Rule
+    """
+    if EXTRA_ID.fullmatch(id) is None:
+        raise RegistryError(f"extra check id {id!r} is not X followed by a number")
+    if id in EXTRAS:
+        raise RegistryError(f"extra check {id} is registered twice")
+    EXTRAS[id] = Rule(id=id, element=element, attribute=attribute, select=select, check=check, extra=True,
+                      meta={"plain_text": text, "rule": None, "message": None, "source_type": EXTENSION,
+                            "versions": "2.1 only", "paths": [], "basis": basis})
+    return EXTRAS[id]
+
+
 def not_evaluated(doc, node):
     """the check of a rule registered with requires=...; the evaluator never calls it"""
     raise RegistryError("a rule that needs external content was evaluated")
 
 
 def all_rules() -> list:
-    """every registered rule in ascending numeric id order"""
+    """every registered CDISC rule in ascending numeric id order"""
     return sorted(REGISTRY.values(), key=lambda r: r.sort_key)
 
 
+def extra_rules() -> list:
+    """every extra check in ascending id order"""
+    return sorted(EXTRAS.values(), key=lambda r: r.sort_key)
+
+
 def get_rule(id: str) -> Rule:
-    return REGISTRY[id]
+    return REGISTRY[id] if id in REGISTRY else EXTRAS[id]
 
 
 # the rule modules register themselves on import; keep these static for PyInstaller's analysis
-from . import structure, datasets, variables, codelists, definitions  # noqa: E402,F401
+from . import structure, datasets, variables, codelists, definitions, extras  # noqa: E402,F401
 
-__all__ = ["Rule", "Violation", "Check", "rule", "not_evaluated", "all_rules", "get_rule",
-           "REGISTRY", "METADATA", "RULES_SOURCE", "SUBMISSION", "NEEDS_CT", "NEEDS_IG",
-           "NEEDS_DATASETS", "REQUIREMENT_LABELS", "RegistryError", "load_metadata"]
+__all__ = ["Rule", "Violation", "Check", "rule", "extra_rule", "not_evaluated", "all_rules", "extra_rules",
+           "get_rule", "REGISTRY", "EXTRAS", "METADATA", "RULES_SOURCE", "EXTRAS_SOURCE", "EXTENSION",
+           "SUBMISSION", "NEEDS_CT", "NEEDS_IG", "NEEDS_DATASETS", "REQUIREMENT_LABELS", "RegistryError",
+           "load_metadata"]

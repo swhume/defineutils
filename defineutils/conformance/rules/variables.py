@@ -101,9 +101,13 @@ def sas_field_name_required_for_xpt(doc, item):
             return
 
 
+# the dataset variables only: the spec leaves def:Origin at the variable or the value level to the
+# sponsor, so a value-level ItemDef may rely on its variable's; rule 155 covers a value list with neither
 rule("154", "def:Origin", None, ITEM,
-     child_present_when("def:Origin", lambda doc, e: not doc.children(e, "def:ValueListRef"),
-                        because="the ItemDef has no def:ValueListRef and the document is a submission"),
+     child_present_when("def:Origin",
+                        lambda doc, e: not doc.children(e, "def:ValueListRef") and _referenced_from_a_dataset(doc, e),
+                        because="the ItemDef is a dataset variable with no def:ValueListRef and the document is a "
+                                "submission"),
      context=SUBMISSION)
 
 

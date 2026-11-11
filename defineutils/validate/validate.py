@@ -12,6 +12,10 @@ from xmlschema.validators.exceptions import (XMLSchemaChildrenValidationError,
 from . import report
 
 DEFAULT_SCHEMA = Path(__file__).parent.joinpath("schema").joinpath("cdisc-define-2.1").joinpath("define2-1-0.xsd")
+# the default for a define.xml with Analysis Results Metadata, whose elements DEFAULT_SCHEMA rejects; it imports the
+# Define-XML v2.1 schema and adds the ARM v1.0 elements
+ARM_SCHEMA = Path(__file__).parent.joinpath("schema").joinpath("cdisc-arm-1.0").joinpath("arm1-0-0.xsd")
+ARM_NS = "http://www.cdisc.org/ns/arm/v1.0"
 
 UNEXPECTED_CHILD = "unexpected_child"
 INCOMPLETE_CONTENT = "incomplete_content"
@@ -74,7 +78,7 @@ class ValidationResult:
 class DefineSchemaValidator():
     def __init__(self, define_file: Path, xsd_file: Path = None):
         self.define_file = Path(define_file)
-        self.xsd_file = Path(xsd_file) if xsd_file is not None else DEFAULT_SCHEMA
+        self.xsd_file = Path(xsd_file) if xsd_file is not None else self._default_schema()
         self._result = None
         try:
             self.xsd = XSD.XMLSchema(self.xsd_file)
@@ -170,6 +174,21 @@ class DefineSchemaValidator():
         :return: string
         """
         return report.render_json(self.validate(), indent)
+
+    def _default_schema(self) -> Path:
+        """
+        picks the bundled schema for the define.xml: ARM_SCHEMA when it has an element in the ARM
+        namespace, otherwise DEFAULT_SCHEMA. A define.xml that cannot be read or parsed gets
+        DEFAULT_SCHEMA, and validating it reports the problem
+        :return: Path
+        """
+        try:
+            with open(self.define_file, "rb") as f:
+                for _ in etree.iterparse(f, events=("start",), tag=f"{{{ARM_NS}}}*"):
+                    return ARM_SCHEMA
+        except (etree.XMLSyntaxError, OSError):
+            pass
+        return DEFAULT_SCHEMA
 
     def _parse_define(self):
         """

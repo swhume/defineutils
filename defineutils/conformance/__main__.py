@@ -9,8 +9,8 @@ from defineutils.conformance.report import render_rule_list
 
 def main():
     """
-    runs the conformance rule checks and returns the exit code: 0 when no rule failed, 1 when
-    at least one rule failed, 2 when the check could not be run -- the define.xml is missing,
+    runs the conformance rule checks and returns the exit code: 0 when no rule or extra check
+    failed, 1 when at least one did, 2 when the check could not be run -- the define.xml is missing,
     not well-formed or a Define-XML 2.0 document, a rule id is unknown, or the report could not
     be written -- and 3 when an unexpected error occurred, with its traceback on stderr so it
     can be reported. 1 means what it means in definevalidate and definerefs, a failed check,
@@ -20,7 +20,7 @@ def main():
     args = set_cmd_line_args()
     try:
         if args.list_rules:
-            print(render_rule_list(DefineConformanceChecker.all_rules()))
+            print(render_rule_list(DefineConformanceChecker.all_rules() + DefineConformanceChecker.extra_rules()))
             return 0
         checker = DefineConformanceChecker(Path(args.define), rules=_ids(args.rules),
                                            skip_rules=_ids(args.skip_rules))
@@ -71,11 +71,12 @@ def set_cmd_line_args():
                         required=False, dest="json", action="store_true")
     parser.add_argument("-L", "--max-locations", help="max example locations shown per finding "
                         "(0 shows all)", required=False, dest="max_locations", type=int, default=5)
-    parser.add_argument("--rules", help="comma-separated rule ids to run; every other rule is "
-                        "reported as skipped", required=False, dest="rules", default=None)
-    parser.add_argument("--skip-rules", help="comma-separated rule ids to leave out",
-                        required=False, dest="skip_rules", default=None)
-    parser.add_argument("--list-rules", help="list the rules, one per line, and exit",
+    parser.add_argument("--rules", help="comma-separated rule ids to run, CDISC numbers or extra checks "
+                        "(X1, ...); every other rule is reported as skipped", required=False, dest="rules",
+                        default=None)
+    parser.add_argument("--skip-rules", help="comma-separated rule ids to leave out, CDISC numbers or extra "
+                        "checks (X1, ...)", required=False, dest="skip_rules", default=None)
+    parser.add_argument("--list-rules", help="list the CDISC rules and the extra checks, one per line, and exit",
                         required=False, dest="list_rules", action="store_true")
     args = parser.parse_args()
     if not args.define and not args.list_rules:

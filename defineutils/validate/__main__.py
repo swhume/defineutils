@@ -54,7 +54,8 @@ def set_cmd_line_args():
     parser.add_argument("-d", "--define", help="path and file name of the define.xml file", required=True,
                         dest="define")
     parser.add_argument("-s", "--schema", help="path and file name of the schema (.xsd) to validate "
-                        "against; omit to use the bundled Define-XML v2.1 schema", required=False,
+                        "against; omit to use the bundled Define-XML v2.1 schema, or the bundled ARM "
+                        "v1.0 schema for a define.xml with ARM content", required=False,
                         dest="schema", default=None)
     parser.add_argument("-o", "--out", help="path and file name of the report to create; "
                         "omit to print to the console", required=False, dest="out", default=None)

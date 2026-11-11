@@ -24,9 +24,11 @@ def nci_aliases(doc, codelist) -> list:
 rule("152", "CodeList", "def:StandardOID", CODELIST,
      ref_to("def:StandardOID", "def:Standard", where=lambda doc, standard: doc.attr(standard, "Type") == "CT",
             because='the def:Standard must have @Type="CT"'))
-rule("153", "CodeList", "def:IsNonStandard", CODELIST,
-     present_when("def:IsNonStandard", lambda doc, e: not nci_aliases(doc, e),
-                  because=f'the CodeList has no Alias[@Context="{NCI_EXT_CODE_ID}"]'))
+# as the spec's CodeList table words it, and P21's DD0128 reads it, whatever the Aliases: "Except for External
+# CodeLists, each CodeList must have either a def:StandardOID attribute or a def:IsNonStandard attribute"
+rule("153", "CodeList", "def:IsNonStandard", f"{CODELIST}[not(odm:ExternalCodeList)]",
+     present_when("def:IsNonStandard", lambda doc, e: not doc.attr(e, "def:StandardOID"),
+                  because="the CodeList has no @def:StandardOID"))
 
 
 @rule("165", "CodeList", None, CODELIST)

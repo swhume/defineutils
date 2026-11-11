@@ -9,7 +9,8 @@ import json
 from dataclasses import asdict
 from textwrap import wrap
 
-MODEL_LABELS = {"define_2_1": "Define-XML v2.1", "define_2_0": "Define-XML v2.0"}
+MODEL_LABELS = {"define_2_1": "Define-XML v2.1", "define_2_0": "Define-XML v2.0",
+                "arm_1_0": "Define-XML v2.1 with ARM v1.0"}
 SECTION_LABELS = [("document", "Document"),
                   ("definitions", "MetaDataVersion definitions"),
                   ("nested", "Nested elements")]
@@ -18,6 +19,9 @@ LABEL_WIDTH = 18
 # a study or metadata description longer than this is truncated in the text report only
 MAX_TEXT_WIDTH = 88
 ABSENT = "-"
+# the model class whose presence in the inventory means the model holds ARM, so the report has a
+# result display table
+RESULT_DISPLAY = "ResultDisplay"
 
 
 def model_label(model_package: str) -> str:
@@ -68,7 +72,7 @@ def standard_text(standard) -> str:
 def render_text(result, show_datasets: bool = True) -> str:
     """
     builds the formatted text report: header, permissive banner, study, element counts,
-    datasets and summary
+    datasets, result displays (for a model with ARM) and summary
     :param result: the MetricsResult to render
     :param show_datasets: when False, the per-dataset table is omitted
     :return: string
@@ -78,14 +82,16 @@ def render_text(result, show_datasets: bool = True) -> str:
     lines += [""] + _render_elements(result)
     if show_datasets:
         lines += [""] + _render_datasets(result)
+    if _models_displays(result):
+        lines += [""] + _render_displays(result)
     lines += [""] + _render_summary(result)
     return "\n".join(lines)
 
 
 def render_json(result, indent: int = 2) -> str:
     """
-    builds the JSON report; unlike the text report it always includes the datasets and never
-    truncates a description
+    builds the JSON report; unlike the text report it always includes the datasets and the result
+    displays, which are empty without ARM, and never truncates a description
     :param result: the MetricsResult to render
     :param indent: JSON indent
     :return: string
@@ -123,6 +129,7 @@ def render_json(result, indent: int = 2) -> str:
         "standards": [asdict(s) for s in result.standards],
         "element_counts": [asdict(e) for e in result.elements],
         "datasets": [asdict(d) for d in result.datasets],
+        "result_displays": [asdict(d) for d in result.displays],
         "totals": {
             "elements": result.total_elements,
             "element_types": result.element_types,
@@ -130,6 +137,8 @@ def render_json(result, indent: int = 2) -> str:
             "element_types_absent": result.element_types_absent,
             "datasets": len(result.datasets),
             "variable_references": result.total_variable_refs,
+            "result_displays": len(result.displays),
+            "analysis_results": result.count("AnalysisResult"),
         },
     }
     return json.dumps(report, indent=indent)
@@ -227,25 +236,53 @@ def _render_datasets(result) -> list:
              d.repeating or ABSENT, d.has_no_data or ABSENT, f"{d.variable_count:,}")
             for d in result.datasets]
     headings = ("OID", "Name", "Class", "Repeating", "No data", "Variables")
-    widths = [max(len(headings[i]), max(len(row[i]) for row in rows))
-              for i in range(len(headings))]
-    lines.append("  " + _row(headings, widths))
-    for row in rows:
-        lines.append("  " + _row(row, widths))
     total = ("", "", "", "", "Total", f"{result.total_variable_refs:,}")
-    lines.append("  " + _row(total, widths))
-    return lines
+    return lines + _table(headings, rows, total)
 
 
-def _row(values, widths) -> str:
-    """one dataset table row: text columns left-aligned, the variable count right-aligned"""
-    cells = [f"{value:{width}}" for value, width in zip(values[:-1], widths[:-1])]
-    cells.append(f"{values[-1]:>{widths[-1]}}")
+def _models_displays(result) -> bool:
+    """True when the model holds ARM result displays: the report then has their table, even for
+    a file with none, and a report from a model without ARM stays as it was"""
+    return any(e.element == RESULT_DISPLAY for e in result.elements)
+
+
+def _render_displays(result) -> list:
+    """renders one row per arm:ResultDisplay with the datasets its analysis results use, named
+    as the dataset table names them (an OID it does not define is shown as is), and its
+    analysis result and variable counts, plus the column totals"""
+    lines = [f"RESULT DISPLAYS ({len(result.displays)})"]
+    if not result.displays:
+        return lines + ["  No arm:ResultDisplay elements are defined."]
+    names = {d.oid: d.name for d in result.datasets}
+    rows = [(d.oid or "", d.name or "", ", ".join(names.get(oid) or oid for oid in d.datasets) or ABSENT,
+             f"{d.result_count:,}", f"{d.variable_count:,}")
+            for d in result.displays]
+    headings = ("OID", "Name", "Datasets", "Results", "Variables")
+    total = ("", "", "Total", f"{sum(d.result_count for d in result.displays):,}",
+             f"{sum(d.variable_count for d in result.displays):,}")
+    return lines + _table(headings, rows, total, numeric=2)
+
+
+def _table(headings, rows, total, numeric: int = 1) -> list:
+    """the lines of a table under a section heading: the headings, the rows and the total row,
+    each column as wide as its widest cell"""
+    table = [headings, *rows, total]
+    widths = [max(len(row[i]) for row in table) for i in range(len(headings))]
+    return ["  " + _row(row, widths, numeric) for row in table]
+
+
+def _row(values, widths, numeric: int = 1) -> str:
+    """one table row: text columns left-aligned, the last `numeric` columns (the counts)
+    right-aligned"""
+    split = len(values) - numeric
+    cells = [f"{value:{width}}" for value, width in zip(values[:split], widths[:split])]
+    cells += [f"{value:>{width}}" for value, width in zip(values[split:], widths[split:])]
     return "  ".join(cells).rstrip()
 
 
 def _render_summary(result) -> list:
-    """renders the closing tallies: the element totals and the headline definition counts"""
+    """renders the closing tallies: the element totals and the headline definition counts,
+    with the result display and analysis result counts for a model with ARM"""
     lines = ["SUMMARY",
              f"  {result.total_elements:,} elements across {result.element_types:,} element "
              f"types ({result.element_types_present:,} present, "
@@ -257,6 +294,9 @@ def _render_summary(result) -> list:
                 f"{result.count('CodeList'):,} code list{_s(result.count('CodeList'))}",
                 f"{result.count('MethodDef'):,} method{_s(result.count('MethodDef'))}"]
     lines += wrap("  " + ", ".join(headline), width=98, subsequent_indent="  ")
+    if _models_displays(result):
+        lines.append(f"  {len(result.displays):,} result display{_s(len(result.displays))}, "
+                     f"{result.count('AnalysisResult'):,} analysis result{_s(result.count('AnalysisResult'))}")
     return lines
 
 

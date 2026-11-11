@@ -20,8 +20,10 @@ REPORTS = [("definevalidate",), ("definevalidate", "--json"), ("definepp",), ("d
            ("definerefs", "--json"), ("definemetrics",), ("definemetrics", "--json"), ("defineconform",),
            ("defineconform", "--json")]
 
-# the tail of the schema path definevalidate loads by default, wherever its install or bundle is
-DEFAULT_SCHEMA = ("defineutils", "validate", "schema", "cdisc-define-2.1", "define2-1-0.xsd")
+# the tail of the schema path definevalidate loads by default for each test file, wherever its install or bundle is;
+# the ADaM sample has ARM content
+DEFAULT_SCHEMAS = {"define.xml": ("defineutils", "validate", "schema", "cdisc-define-2.1", "define2-1-0.xsd"),
+                   "define-adam.xml": ("defineutils", "validate", "schema", "cdisc-arm-1.0", "arm1-0-0.xsd")}
 
 SCHEMA_LINE = re.compile(rb"^  Schema: (.*?)\r?$", re.MULTILINE)
 
@@ -76,5 +78,5 @@ def test_reports_match(define, report, run_cli, run_module):
     module_report, _ = _without_schema(module.stdout, "--json" in options)
     assert command_report == module_report
     # the command found the bundled schema in its own install or bundle
-    assert Path(schema).parts[-len(DEFAULT_SCHEMA):] == DEFAULT_SCHEMA
+    assert Path(schema).parts[-len(DEFAULT_SCHEMAS[define]):] == DEFAULT_SCHEMAS[define]
     assert Path(schema).is_file()

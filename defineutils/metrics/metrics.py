@@ -7,10 +7,13 @@ from the report. Child classes are resolved by name against the model module -- 
 odmlib's own loader does it (define_loader.py: elem_class = getattr(self.DEF, elem_name)) --
 because the Define-XML MetaDataVersion inherits its ItemGroupDef, ItemDef, CodeList and
 MethodDef descriptors from ODM 1.3.2, so following descriptor.element_class would walk the
-ODM shape rather than the Define-XML one.
+ODM shape rather than the Define-XML one. A define.xml with Analysis Results Metadata is
+loaded into odmlib's "arm_1_0" model, which extends "define_2_1"; the define_2_1 loader drops
+the ARM elements.
 """
 import importlib
 import os
+import xml.etree.ElementTree as ET
 from collections import Counter, deque
 from contextlib import nullcontext
 from dataclasses import dataclass, field
@@ -19,6 +22,7 @@ from pathlib import Path
 from typing import Union
 
 import odmlib
+import odmlib.arm_loader as AL
 import odmlib.define_loader as DL
 import odmlib.loader as LD
 from odmlib import permissive as permissive_mode
@@ -26,6 +30,9 @@ from odmlib.odm_element import ODMElement
 
 from . import report
 
+DEFINE_MODEL = "define_2_1"
+ARM_MODEL = "arm_1_0"
+ARM_RESULT_DISPLAYS = "{http://www.cdisc.org/ns/arm/v1.0}AnalysisResultDisplays"
 # instance attributes odmlib uses for its own bookkeeping; not document content
 SKIP_KEYS = {"_fields", "_attr_ns", "_elems", "_attrs"}
 # the element the section rule pivots on: its children are the document's definitions
@@ -46,7 +53,7 @@ class DefineMetricsError(Exception):
 class ElementCount:
     element: str            # model class name, e.g. "leaf"
     display: str            # namespace-prefixed name for display, e.g. "def:leaf"
-    namespace: str          # "odm" | "def"
+    namespace: str          # "odm" | "def" | "arm"
     section: str            # "document" | "definitions" | "nested"
     count: int
 
@@ -78,6 +85,15 @@ class DatasetMetrics:
     variable_count: int     # len(ItemGroupDef.ItemRef)
 
 
+@dataclass(frozen=True)
+class DisplayMetrics:
+    oid: str
+    name: Union[str, None]
+    result_count: int       # len(ResultDisplay.AnalysisResult)
+    datasets: list          # distinct AnalysisDataset/@ItemGroupOID across its results, in document order
+    variable_count: int     # AnalysisVariable elements across its results
+
+
 @dataclass
 class MetricsResult:
     define_file: str
@@ -104,6 +120,7 @@ class MetricsResult:
     standards: list = field(default_factory=list)    # StandardInfo
     elements: list = field(default_factory=list)     # ElementCount, in model order
     datasets: list = field(default_factory=list)     # DatasetMetrics, in document order
+    displays: list = field(default_factory=list)     # DisplayMetrics, in document order; empty without ARM
 
     @property
     def total_elements(self) -> int:
@@ -136,13 +153,15 @@ class MetricsResult:
 
 
 class DefineMetrics:
-    def __init__(self, define_xml_file: Path, model_package: str = "define_2_1",
+    def __init__(self, define_xml_file: Path, model_package: str = DEFINE_MODEL,
                  permissive: bool = False) -> None:
         self.define = Path(define_xml_file)
-        self.model_package = model_package
         self.permissive = permissive
         self._result = None
         self._does_define_file_exist()
+        # define_2_1 is upgraded to arm_1_0 for a file with ARM content, which define_2_1 drops
+        self.model_package = (ARM_MODEL if model_package == DEFINE_MODEL and self._has_arm_content()
+                              else model_package)
 
     def collect(self) -> MetricsResult:
         """
@@ -343,6 +362,7 @@ class DefineMetrics:
                                    count=counts.get(cls.__name__, 0))
                       for cls, section in inventory],
             datasets=self._datasets(mdv),
+            displays=self._displays(mdv),
         )
 
     def _standards(self, mdv) -> list:
@@ -389,6 +409,31 @@ class DefineMetrics:
             ))
         return datasets
 
+    def _displays(self, mdv) -> list:
+        """
+        one row per arm:ResultDisplay in document order, with its analysis result count, the
+        datasets its analysis results use and their AnalysisVariable count. Empty for a model
+        without ARM, whose MetaDataVersion holds no AnalysisResultDisplays
+        :param mdv: the MetaDataVersion object, or None
+        :return: list of DisplayMetrics
+        """
+        displays = []
+        for display in self._attr(self._attr(mdv, "AnalysisResultDisplays"), "ResultDisplay") or []:
+            results = self._attr(display, "AnalysisResult") or []
+            analysis_datasets = [dataset for result in results
+                                 for dataset in self._attr(self._attr(result, "AnalysisDatasets"),
+                                                           "AnalysisDataset") or []]
+            group_oids = (self._attr(dataset, "ItemGroupOID") for dataset in analysis_datasets)
+            displays.append(DisplayMetrics(
+                oid=self._attr(display, "OID"),
+                name=self._attr(display, "Name"),
+                result_count=len(results),
+                datasets=[oid for oid in dict.fromkeys(group_oids) if oid],
+                variable_count=sum(len(self._attr(dataset, "AnalysisVariable") or [])
+                                   for dataset in analysis_datasets),
+            ))
+        return displays
+
     @staticmethod
     def _attr(elem, name: str):
         """
@@ -420,12 +465,31 @@ class DefineMetrics:
         except Exception as e:
             raise DefineMetricsError(self._load_error_message(e))
 
+    def _has_arm_content(self) -> bool:
+        """
+        scans the define.xml for an arm:AnalysisResultDisplays element. A file that cannot be read
+        or parsed is left to the load, which reports the problem
+        :return: True when the define.xml holds Analysis Results Metadata
+        """
+        try:
+            with open(self.define, "rb") as f:
+                return any(elem.tag == ARM_RESULT_DISPLAYS
+                           for _, elem in ET.iterparse(f, events=("start",)))
+        except (ET.ParseError, OSError):
+            return False
+
     def _open_define(self):
         """
-        opens the define.xml with the odmlib Define-XML loader and builds the model objects
+        opens the define.xml with the odmlib loader for the model and builds the model objects:
+        the ARM loader for arm_1_0, since the Define-XML loader drops every def: element from
+        that model, otherwise the Define-XML loader
         :return: the root ODM object
         """
-        loader = LD.ODMLoader(DL.XMLDefineLoader(model_package=self.model_package))
+        if self.model_package == ARM_MODEL:
+            document_loader = AL.XMLArmLoader(model_package=self.model_package)
+        else:
+            document_loader = DL.XMLDefineLoader(model_package=self.model_package)
+        loader = LD.ODMLoader(document_loader)
         loader.open_odm_document(str(self.define))
         return loader.root()
 

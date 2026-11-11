@@ -1,3 +1,4 @@
+import importlib
 import inspect
 import json
 import sys
@@ -12,6 +13,7 @@ from defineutils.metrics import DefineMetrics, DefineMetricsError
 
 ODM_NS = "http://www.cdisc.org/ns/odm/v1.3"
 DEF_NS = "http://www.cdisc.org/ns/def/v2.1"
+ARM_NS = "http://www.cdisc.org/ns/arm/v1.0"
 NS = {"odm": ODM_NS, "def": DEF_NS}
 
 
@@ -23,6 +25,11 @@ def define_file() -> Path:
     return data_path() / "define.xml"
 
 
+def adam_file() -> Path:
+    # the CDISC ADaM sample, the only test file with ARM content
+    return data_path() / "define-adam.xml"
+
+
 def _mdv(tree):
     return tree.getroot().find(".//odm:MetaDataVersion", NS)
 
@@ -32,21 +39,22 @@ def _write(tree, path: Path) -> Path:
     return path
 
 
-def _raw_counts() -> Counter:
-    """An independent census of tests/define.xml: every element counted by local name,
-    with no odmlib involved. The metrics traversal has to agree with this exactly. The
-    file's comments are skipped -- lxml yields them from iter() with a callable tag, and
-    odmlib drops them at load, so they are not document content on either side."""
+def _raw_counts(path: Path = None) -> Counter:
+    """An independent census of a define.xml, tests/define.xml by default: every element
+    counted by local name, with no odmlib involved. The metrics traversal has to agree with
+    this exactly. The file's comments are skipped -- lxml yields them from iter() with a
+    callable tag, and odmlib drops them at load, so they are not document content on either
+    side."""
     counts = Counter()
-    for element in etree.parse(str(define_file())).getroot().iter():
+    for element in etree.parse(str(path or define_file())).getroot().iter():
         if isinstance(element.tag, str):
             counts[etree.QName(element).localname] += 1
     return counts
 
 
-def _model_element_classes() -> set:
-    """The element classes the odmlib define_2_1 model itself declares."""
-    import odmlib.define_2_1.model as model
+def _model_element_classes(model_package: str = "define_2_1") -> set:
+    """The element classes an odmlib model itself declares."""
+    model = importlib.import_module(f"odmlib.{model_package}.model")
 
     return {name for name, obj in vars(model).items()
             if inspect.isclass(obj) and issubclass(obj, ODMElement)
@@ -248,6 +256,9 @@ def test_text_report_sections_and_zero_rows():
     assert "def:AnnotatedCRF       0" in listing
     assert "2,090 elements across 39 element types (37 present, 2 absent)" in listing
     assert "NOTE: loaded in permissive mode" not in listing
+    # the define_2_1 model holds no ARM, so there is no result display table or count
+    assert "RESULT DISPLAYS" not in listing
+    assert "result display" not in listing
 
 
 def test_text_report_dataset_table():
@@ -271,13 +282,15 @@ def test_json_report_structure():
 
     assert list(report) == ["define_file", "model_package", "odmlib_version", "permissive",
                             "file", "document", "study", "standards", "element_counts",
-                            "datasets", "totals"]
+                            "datasets", "result_displays", "totals"]
     assert report["file"]["size_bytes"] == define_file().stat().st_size
     assert report["document"]["creation_datetime"] == "2024-11-21T16:27:00"
     assert report["study"]["study_name"] == "CDISC01_1"
+    assert report["result_displays"] == []
     assert report["totals"] == {"elements": 2090, "element_types": 39,
                                 "element_types_present": 37, "element_types_absent": 2,
-                                "datasets": 11, "variable_references": 155}
+                                "datasets": 11, "variable_references": 155,
+                                "result_displays": 0, "analysis_results": 0}
 
 
 def test_json_report_keeps_every_element_type_in_model_order():
@@ -372,6 +385,132 @@ def test_unwritable_out_file_raises(tmp_path: Path):
         DefineMetrics(define_file()).collect_to_file(tmp_path)
 
 
+# 8. Analysis Results Metadata
+
+def _edited_adam(tmp_path: Path, edit) -> Path:
+    tree = etree.parse(str(adam_file()))
+    edit(tree)
+    return _write(tree, tmp_path / "edited_adam.xml")
+
+
+def _arm(tree, local: str):
+    return next(tree.iter(f"{{{ARM_NS}}}{local}"))
+
+
+@pytest.fixture(scope="module")
+def adam_result():
+    return DefineMetrics(adam_file()).collect()
+
+
+def test_adam_sample_counts_match_an_independent_census(adam_result):
+    # loaded as define_2_1, the sample lost its 25 ARM elements and the 31 Description, TranslatedText,
+    # def:DocumentRef, def:PDFPageRef and def:WhereClauseRef elements inside them
+    assert adam_result.model_package == "arm_1_0"
+    assert {e.element: e.count for e in adam_result.elements if e.count} == dict(_raw_counts(adam_file()))
+    assert adam_result.total_elements == 1868
+
+
+def test_arm_inventory_is_every_arm_model_element_class(adam_result):
+    arm = {e.element: (e.display, e.section, e.count) for e in adam_result.elements if e.namespace == "arm"}
+
+    assert {e.element for e in adam_result.elements} == _model_element_classes("arm_1_0")
+    assert adam_result.element_types == 48
+    assert arm == {"AnalysisResultDisplays": ("arm:AnalysisResultDisplays", "definitions", 1),
+                   "ResultDisplay": ("arm:ResultDisplay", "nested", 2),
+                   "AnalysisResult": ("arm:AnalysisResult", "nested", 3),
+                   "AnalysisDatasets": ("arm:AnalysisDatasets", "nested", 3),
+                   "Documentation": ("arm:Documentation", "nested", 3),
+                   "ProgrammingCode": ("arm:ProgrammingCode", "nested", 3),
+                   "AnalysisDataset": ("arm:AnalysisDataset", "nested", 4),
+                   "Code": ("arm:Code", "nested", 2),
+                   "AnalysisVariable": ("arm:AnalysisVariable", "nested", 4)}
+
+
+def test_text_report_names_the_arm_model():
+    listing = DefineMetrics(adam_file()).collect_to_string()
+
+    assert "  Model:    Define-XML v2.1 with ARM v1.0 (odmlib arm_1_0," in listing
+    assert "arm:AnalysisResultDisplays    1" in listing
+    assert "1,868 elements across 48 element types (46 present, 2 absent)" in listing
+
+
+def test_adam_sample_without_arm_content_stays_define_2_1(tmp_path: Path):
+    # the ARM namespace is still declared on the root, but there is no ARM content to count
+    def drop_arm(tree):
+        displays = _arm(tree, "AnalysisResultDisplays")
+        displays.getparent().remove(displays)
+
+    edited = _edited_adam(tmp_path, drop_arm)
+    result = DefineMetrics(edited).collect()
+
+    assert result.model_package == "define_2_1"
+    assert result.element_types == 39
+    assert {e.element: e.count for e in result.elements if e.count} == dict(_raw_counts(edited))
+
+
+def test_nonconformant_arm_content_raises_without_permissive(tmp_path: Path):
+    # loaded as define_2_1, an ARM element missing a required attribute was silently dropped
+    edited = _edited_adam(tmp_path, lambda t: _arm(t, "AnalysisResult").attrib.pop("AnalysisReason"))
+
+    with pytest.raises(DefineMetricsError) as excinfo:
+        DefineMetrics(edited).collect()
+
+    message = str(excinfo.value)
+    assert "into the Define-XML v2.1 with ARM v1.0 model" in message
+    assert "AnalysisReason" in message
+    assert "add --permissive" in message
+    result = DefineMetrics(edited, permissive=True).collect()
+    assert (result.model_package, result.count("AnalysisResult")) == ("arm_1_0", 3)
+
+
+def test_display_rows(adam_result):
+    displays = list(etree.parse(str(adam_file())).iter(f"{{{ARM_NS}}}ResultDisplay"))
+    expected = [(d.get("OID"), d.get("Name"), len(d.findall(f"{{{ARM_NS}}}AnalysisResult")),
+                 len(list(d.iter(f"{{{ARM_NS}}}AnalysisVariable"))))
+                for d in displays]
+
+    assert [(d.oid, d.name, d.result_count, d.variable_count) for d in adam_result.displays] == expected
+    # both of Table 14-3.01's analysis results use ADQSADAS; a dataset is listed once
+    assert [d.datasets for d in adam_result.displays] == [["IG.ADQSADAS"], ["IG.ADAE", "IG.ADSL"]]
+
+
+def test_text_report_display_table():
+    # result displays are not datasets, so --no-datasets leaves their table in
+    listing = DefineMetrics(adam_file()).collect_to_string(show_datasets=False)
+
+    assert "RESULT DISPLAYS (2)" in listing
+    assert "OID               Name           Datasets    Results  Variables" in listing
+    assert "RD.Table_14-5.02  Table 14-5.02  ADAE, ADSL        1          2" in listing
+    assert "Total             3          4" in listing
+    assert "  2 result displays, 3 analysis results" in listing
+
+
+def test_display_table_shows_an_undefined_dataset_oid_as_is(tmp_path: Path):
+    # metrics describes, it does not check: a dangling ItemGroupOID is definerefs' to report
+    edited = _edited_adam(tmp_path, lambda t: _arm(t, "AnalysisDataset").set("ItemGroupOID", "IG.NONE"))
+
+    listing = DefineMetrics(edited).collect_to_string()
+
+    assert "RD.Table_14-3.01  Table 14-3.01  IG.NONE, ADQSADAS" in listing
+
+
+def test_json_report_result_displays():
+    report = json.loads(DefineMetrics(adam_file()).collect_to_json())
+
+    assert report["result_displays"][1] == {"oid": "RD.Table_14-5.02", "name": "Table 14-5.02",
+                                            "result_count": 1, "datasets": ["IG.ADAE", "IG.ADSL"],
+                                            "variable_count": 2}
+    assert (report["totals"]["result_displays"], report["totals"]["analysis_results"]) == (2, 3)
+
+
+def test_arm_model_reports_a_file_without_result_displays():
+    # as with any element the model holds, an absent display is reported, not left out
+    listing = DefineMetrics(define_file(), model_package="arm_1_0").collect_to_string()
+
+    assert "RESULT DISPLAYS (0)\n  No arm:ResultDisplay elements are defined." in listing
+    assert "  0 result displays, 0 analysis results" in listing
+
+
 # the CLI
 
 def test_cli_exit_code_success(run_cli):
@@ -380,6 +519,15 @@ def test_cli_exit_code_success(run_cli):
     assert completed.returncode == 0
     assert b"Define-XML metrics" in completed.stdout
     assert b"Traceback" not in completed.stderr
+
+
+def test_cli_counts_arm_content(run_cli):
+    completed = run_cli("definemetrics", "-d", str(adam_file()), "--json")
+
+    assert completed.returncode == 0
+    report = json.loads(completed.stdout)
+    assert report["model_package"] == "arm_1_0"
+    assert report["totals"]["elements"] == 1868
 
 
 def test_cli_exit_code_missing_file(run_cli):

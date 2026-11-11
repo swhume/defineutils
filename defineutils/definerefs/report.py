@@ -6,12 +6,17 @@ duck-types the RefCheckResult it is handed and reads severities through that obj
 and warnings properties -- which keeps the dependency one-way and free of an import cycle.
 """
 import json
+import re
 from dataclasses import asdict
 from textwrap import wrap
 
-MODEL_LABELS = {"define_2_1": "Define-XML v2.1", "define_2_0": "Define-XML v2.0"}
+MODEL_LABELS = {"define_2_1": "Define-XML v2.1", "define_2_0": "Define-XML v2.0",
+                "arm_1_0": "Define-XML v2.1 with ARM v1.0"}
 # element class names that read better with their Define-XML namespace prefix
 DISPLAY_ELEMENT = {"leaf": "def:leaf"}
+# the ODM/Study[...] prefix of a collected path; matched rather than split on "/", since a Study
+# OID may contain one (the CDISC ADaM sample's is CDISC-Sample/ADaM)
+STUDY_PREFIX = re.compile(r"^/ODM(?:/Study(?:\[.*?\])?)?(?=/|$)")
 
 
 def model_label(model_package: str) -> str:
@@ -29,10 +34,7 @@ def display_path(path: str) -> str:
     :param path: the collected path, e.g. "/ODM/Study[SDTM]/MetaDataVersion[MDV.1]"
     :return: string
     """
-    segments = [s for s in path.split("/") if s]
-    while segments and (segments[0] == "ODM" or segments[0].split("[")[0] == "Study"):
-        segments.pop(0)
-    return "/".join(segments) or "(document root)"
+    return STUDY_PREFIX.sub("", path).lstrip("/") or "(document root)"
 
 
 def article(word: str) -> str:

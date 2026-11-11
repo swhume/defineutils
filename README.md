@@ -24,11 +24,12 @@ with content silently missing. Links in the define.xml that use a scheme other t
 the Comments table, the Methods table, `[Comment]`/`[Method]`/`[Origin]` prefixes, the Length / Significant Digits /
 Display Format column, and how many codelist terms are listed in the Controlled Terms column.
 
-The `validate.py` module includes the Define-XML v2.1 schema to simplify usage. It schema validates a define.xml file
+The `validate.py` module includes the Define-XML v2.1 schema, and the ARM v1.0 schema that it uses for a define.xml with
+Analysis Results Metadata (ARM), to simplify usage. It schema validates a define.xml file
 and reports every schema validation error it finds, not just the first one. Errors that say the same thing about the
 same kind of element are grouped into one finding that lists each place it occurs, with a line number, so a file with
 hundreds of errors reads as a manageable list of distinct problems. The report can be printed to the console, written
-to a text file, or emitted as JSON. The bundled schema is the default, but any schema file can be used instead -- the
+to a text file, or emitted as JSON. The bundled schemas are the default, but any schema file can be used instead -- the
 `-s` command-line parameter, or the `xsd_file` argument in code -- to validate against a different Define-XML version.
 
 The `definepp.py` module pretty-prints a define.xml file. The reformat is byte-preserving apart from whitespace:
@@ -38,14 +39,19 @@ define.xml to a file, or, if no output file is given, to the console where it ca
 The `definerefs.py` module checks the OID reference/definition integrity of a define.xml file and prints a formatted
 listing of everything it finds: references to OIDs nothing defines, references that resolve to the wrong kind of
 element, duplicate OIDs, and definitions nothing references. It also checks the Define-XML document leaves
-(`def:leaf`) and the `def:ArchiveLocationID` / `leafID` references to them. Errors and warnings are listed together
-with the location of each occurrence; the report can be written to the console, to a file, or as JSON.
+(`def:leaf`) and the `def:ArchiveLocationID` / `leafID` references to them. A define.xml with Analysis Results
+Metadata (ARM) is checked with odmlib's ARM model, so the references from its result displays and analysis results
+are checked as well. Errors and warnings are listed together with the location of each occurrence; the report can be
+written to the console, to a file, or as JSON.
 
 The `metrics.py` module reports what is in a define.xml: its size and creation date, the study and metadata version it
 describes, the CDISC standards it references, a count of every element, and a per-dataset table with the number of
 variables in each. The element list is derived from the Define-XML v2.1 model rather than hand-maintained, so an
 element the file does not use is reported as 0 instead of being left out -- a define.xml with no `MethodDef` at all
-says so. The report can be printed to the console, written to a text file, or emitted as JSON.
+says so. A define.xml with Analysis Results Metadata (ARM) is loaded with odmlib's ARM model, so its result displays,
+analysis results and the elements inside them are counted too, and the report adds a per-display table with the
+datasets, analysis results and analysis variables of each result display. The report can be printed to the console,
+written to a text file, or emitted as JSON.
 
 The `defineview.py` module shows a define.xml in the browser: it writes the HTML beside the define.xml and opens it in
 the default browser, or opens a page saying why the file could not be shown. On Windows, choosing defineview once to
@@ -58,8 +64,10 @@ answers the question a reviewer asks -- which rules does this define.xml break, 
 rules that can be decided from the document itself are evaluated, the 13 that apply only in the context of a
 submission are evaluated when the document declares `def:Context="Submission"`, and the 15 that need published CDISC
 controlled terminology, implementation-guide metadata or the datasets are listed as not evaluated, so the report
-accounts for every rule. The rules are evaluated on the XML directly, so a non-conformant file does not need a
-permissive mode to be checked. The report can be printed to the console, written to a text file, or emitted as JSON.
+accounts for every rule. Four extra checks, extensions to the CDISC rules that improve the quality of a define.xml,
+are evaluated and reported separately. The rules are evaluated on the XML directly, so a non-conformant file does not
+need a permissive mode to be checked. The report can be printed to the console, written to a text file, or emitted as
+JSON.
 
 ## Installing defineutils
 
@@ -232,7 +240,9 @@ validator phrased it, and a `locations` list of path/line pairs. The result is c
 re-parse the file. The text listing shows the first 5 locations per finding by default; JSON always includes all of
 them.
 
-To validate against a different version of the schema, pass its file path as the `xsd_file` argument:
+Without the `xsd_file` argument, a define.xml with ARM content is validated against the bundled ARM v1.0 schema and any
+other against the bundled Define-XML v2.1 schema. To validate against a different version of the schema, pass its file
+path as the `xsd_file` argument:
 ```python
 validator = DefineSchemaValidator(Path(__file__).parent.joinpath("define.xml"),
                                   xsd_file=Path("cdisc-define-2.0").joinpath("define2-0-0.xsd"))
@@ -300,10 +310,13 @@ except DefineMetricsError as e:
 The above code loads the define.xml with odmlib and collects its metrics. `collect()` returns a MetricsResult carrying
 the file size and modified time, the `creation_datetime` the document declares, the study and metadata version
 identifiers, the `standards` it references, an `elements` list holding a count for every element type the Define-XML
-v2.1 model defines, and a `datasets` list holding one entry per ItemGroupDef with its variable count. The
-`total_elements`, `element_types`, `element_types_present`, `element_types_absent` and `total_variable_refs`
-properties give the totals, and `count("ItemDef")` looks up a single element count by name. The result is cached, so
-the report methods do not re-parse the file. Use `collect_to_string()` for the formatted report,
+v2.1 model defines (the ARM v1.0 model, which adds the `arm:` elements, when the define.xml has ARM content), and a
+`datasets` list holding one entry per ItemGroupDef with its variable count. The `model_package` is `define_2_1`, or
+`arm_1_0` for a define.xml with ARM content, and then the `displays` list holds one entry per `arm:ResultDisplay`
+with its analysis result count, the ItemGroupOIDs of the datasets its analysis results use, and its analysis variable
+count; without ARM content it is empty. The `total_elements`, `element_types`, `element_types_present`,
+`element_types_absent` and `total_variable_refs` properties give the totals, and `count("ItemDef")` looks up a single
+element count by name. The result is cached, so the report methods do not re-parse the file. Use `collect_to_string()` for the formatted report,
 `collect_to_file()` to write it to a file, `collect_to_console()` to print it, and `collect_to_json()` for
 machine-readable results; pass `show_datasets=False` to leave the per-dataset table out of the text report. A
 define.xml that will not load into the Define-XML v2.1 model is reported via the DefineMetricsError exception with a
@@ -334,12 +347,14 @@ ConformanceResult: `findings` holds one Finding per failed rule, in ascending ru
 `cdisc_message`, and a Location per occurrence with the OID-decorated `path`, the source `line` and a one-sentence
 `detail` saying what is wrong there; `passed`, `not_applicable` (the Submission-only rules, when the document is not a
 submission) and `not_evaluated` (the rules that need CDISC controlled terminology, implementation-guide metadata or the
-datasets, with the reason) account for the rest of the 225. The `has_errors`, `occurrence_count` and
-`evaluated_count` properties summarise it. The result is cached, so the report methods do not re-parse the file. Use
-`check_to_string()` for the formatted listing, `check_to_file()` to write it to a file, `check_to_console()` to print
-it, and `check_to_json()` for machine-readable results; pass `rules=["73", "110"]` to evaluate a subset, or
-`skip_rules=[...]` to leave rules out, and `DefineConformanceChecker.all_rules()` lists the registry with each
-rule's text. A file that is missing, not well-formed or a Define-XML 2.0 document is reported via the
+datasets, with the reason) account for the rest of the 225. The extra checks, defineutils' extensions to the CDISC
+rules, are kept apart in `extra_findings`, `extra_passed` and `extra_skipped`; their findings also carry the `basis`
+the check rests on. The `has_errors` property covers both, and `occurrence_count` and `evaluated_count` summarise the
+CDISC rules. The result is cached, so the report methods do not re-parse the file. Use `check_to_string()` for the
+formatted listing, `check_to_file()` to write it to a file, `check_to_console()` to print it, and `check_to_json()` for
+machine-readable results; pass `rules=["73", "110"]` to evaluate a subset, or `skip_rules=[...]` to leave rules out
+(extra check ids such as `"X1"` work in both), and `DefineConformanceChecker.all_rules()` and `extra_rules()` list the
+registry with each rule's text. A file that is missing, not well-formed or a Define-XML 2.0 document is reported via the
 DefineConformanceLoadError exception, a subclass of DefineConformanceError.
 
 ## Running defineutils from the Command-line
@@ -391,13 +406,17 @@ defineview --temp tests/define.xml
 
 The definevalidate command schema validates a define.xml. Only the -d parameter is required, to indicate the file
 path of the define.xml to validate. The -s parameter is optional and gives the file path
-of the schema to validate against; without it the bundled Define-XML v2.1 schema is used. Without -o the formatted
+of the schema to validate against; without it the bundled Define-XML v2.1 schema is used, or the bundled ARM v1.0
+schema when the define.xml has Analysis Results Metadata (ARM). Without -o the formatted
 listing goes to the console; with -o it is written to the given file. The --json switch emits machine-readable results
 instead of the listing, and -L sets how many example locations are shown per finding (0 shows all).
 
 ```commandline
 # validate against the bundled Define-XML v2.1 schema
 definevalidate -d tests/define.xml
+
+# a define.xml with ARM content is validated against the bundled ARM v1.0 schema
+definevalidate -d tests/define-adam.xml
 
 # validate against a different version of the schema
 definevalidate -d tests/define.xml -s cdisc-define-2.0/define2-0-0.xsd
@@ -553,6 +572,21 @@ SUMMARY
 `def:AnnotatedCRF 0` above is the point of the model-derived element list: this define.xml has no annotated CRF, and
 the report says so rather than staying silent about it.
 
+For a define.xml with ARM content, the element counts include the `arm:` elements, a table of the result displays
+follows the datasets (--no-datasets leaves it in), and the summary gains a line counting them. The Datasets column
+names the datasets the analysis results of each display use:
+
+```
+RESULT DISPLAYS (2)
+  OID               Name           Datasets    Results  Variables
+  RD.Table_14-3.01  Table 14-3.01  ADQSADAS          2          2
+  RD.Table_14-5.02  Table 14-5.02  ADAE, ADSL        1          2
+                                   Total             3          4
+```
+
+In the JSON, `result_displays` holds the same rows, with the datasets as ItemGroupOIDs, and `totals` counts the
+result displays and analysis results; without ARM content the list is empty and both totals are 0.
+
 definemetrics sets an exit code: 0 when the report was produced, and 2 when it could not be -- the define.xml is
 missing or would not load, or the report could not be written. 1 means only that an unexpected error occurred, and its
 traceback is printed to stderr. Unlike definevalidate and definerefs, definemetrics never exits 1 to judge the
@@ -562,7 +596,19 @@ The defineconform command checks a define.xml against the CDISC Define-XML v2.1 
 parameter to specify the define.xml file path. Without -o the listing goes to the console; with -o it is written to
 the given file. The --json switch emits machine-readable results instead of the listing, -L sets how many example
 locations are shown per finding (0 shows all), --rules evaluates only the given rule ids and --skip-rules leaves
-rule ids out, and --list-rules prints the 225 rules, one per line, without checking a file.
+rule ids out, and --list-rules prints the 225 rules and the 4 extra checks, one per line, without checking a file.
+
+The extra checks are defineutils' extensions to the CDISC rules: requirements no CDISC rule tests, but that improve
+the quality of a define.xml. Their ids start with X, so they can be named in --rules and --skip-rules, and each names
+its basis, such as the Define-XML specification or a Pinnacle 21 rule. They are reported in their own section and
+summary line, apart from the CDISC rule counts.
+
+| Id | Requirement | Basis |
+|---|---|---|
+| X1 | ItemGroupDef Name values are unique | P21 DD0051 (SASDatasetName); Define-XML 2.0 Schematron |
+| X2 | An ItemGroupDef references each ItemDef at most once | P21 OD0041; ODM 1.3 Schematron |
+| X3 | ItemRef OrderNumber values are unique within an ItemGroupDef or def:ValueListDef | P21 OD0042; ODM 1.3 Schematron |
+| X4 | A Predecessor def:Origin has a Description naming the dataset and variable copied | Define-XML 2.1 section 4.3.2; P21 DD0061 |
 
 ```commandline
 # print the listing to the console
@@ -578,33 +624,32 @@ defineconform -d tests/define.xml --json
 defineconform -d tests/define.xml --rules 73,159 -L 0
 
 # every rule but these
-defineconform -d tests/define.xml --skip-rules 153,249
+defineconform -d tests/define.xml --skip-rules 159,249
+
+# the CDISC rules only, without the extra checks
+defineconform -d tests/define.xml --skip-rules X1,X2,X3,X4
 
 # the rules themselves: id, how each is evaluated, element/attribute, source, versions and text
 defineconform --list-rules
 ```
 
 The listing names the file, its Define-XML version and context, then each failed rule with its CDISC id, the rule text
-and the line and path of each occurrence, and accounts for the rules that were not evaluated:
+and the line and path of each occurrence, and accounts for the rules that were not evaluated. A failed extra check is
+listed under EXTRA CHECKS, after the CDISC rules, with its basis:
 
 ```
 Define-XML conformance check
   File:     tests/define.xml
   Version:  Define-XML 2.1.9    Context: Other
   Rules:    CDISC Define-XML v2.1 Conformance Rules (225)
+  Extra:    defineutils extra checks (4)
 
-ERRORS (5 rules, 55 occurrences)
+ERRORS (4 rules, 44 occurrences)
 
   [73]   ItemRef/@MethodOID   (2 occurrences)
          The MethodOID attribute must be provided on the  ItemRef element when the Origin Type attribute on the corresponding ItemDef element is "Derived".
          - line 556  MetaDataVersion[MDV.CDISC01_1.1.SDTMIG.3.1.2.SDTM.1.2_X]/ItemGroupDef[IG.EC]/ItemRef[IT.EC.EXDOSE]: ItemDef IT.EC.EXDOSE has def:Origin/@Type="Derived" but the ItemRef has no @MethodOID
          - line 557  MetaDataVersion[MDV.CDISC01_1.1.SDTMIG.3.1.2.SDTM.1.2_X]/ItemGroupDef[IG.EC]/ItemRef[IT.EC.EXDOSU]: ItemDef IT.EC.EXDOSU has def:Origin/@Type="Derived" but the ItemRef has no @MethodOID
-
-  [153]  CodeList/@def:IsNonStandard   (11 occurrences)
-         Attribute def:IsNonStandard must be provided for a CodeList element where CDISC Controlled Terminology is required and there is no Alias provided.
-         - line 2133  MetaDataVersion[MDV.CDISC01_1.1.SDTMIG.3.1.2.SDTM.1.2_X]/CodeList[CL.ARM]: @def:IsNonStandard is missing, but the CodeList has no Alias[@Context="nci:ExtCodeID"]
-         - line 2139  MetaDataVersion[MDV.CDISC01_1.1.SDTMIG.3.1.2.SDTM.1.2_X]/CodeList[CL.ARMCD]: @def:IsNonStandard is missing, but the CodeList has no Alias[@Context="nci:ExtCodeID"]
-         ... and 9 more
 
   [159]  def:Origin/@Type   (30 occurrences)
          ItemDef which has a def:Origin element with Type = 'Collected' must have a reference to a document which corresponds to AnnotatedCRF
@@ -632,7 +677,8 @@ NOT EVALUATED (15 rules)
   Need the datasets:                      76
 
 SUMMARY
-  225 rules: 197 evaluated, 192 passed, 5 failed (55 occurrences), 13 not applicable, 15 not evaluated
+  225 rules: 197 evaluated, 193 passed, 4 failed (44 occurrences), 13 not applicable, 15 not evaluated
+  4 extra checks: 4 evaluated, 4 passed, 0 failed (0 occurrences)
   File: tests/define.xml
 ```
 
@@ -640,8 +686,8 @@ The listing above was produced with `-L 2`. The CDISC sample above declares `def
 submission-only rules are not applicable to it; a define.xml that declares `Submission` has them evaluated too, as
 tests/define-adam.xml does.
 
-defineconform sets an exit code, like definevalidate and definerefs, so it can gate a CI job: 0 when no rule failed,
-1 when at least one rule failed, 2 when the check could not be run at all -- the define.xml is missing, not
+defineconform sets an exit code, like definevalidate and definerefs, so it can gate a CI job: 0 when no rule or extra
+check failed, 1 when at least one did, 2 when the check could not be run at all -- the define.xml is missing, not
 well-formed or a Define-XML 2.0 document, a rule id is unknown, or the report could not be written -- and 3 when an
 unexpected error occurred, with its traceback printed to stderr, so a crash is never mistaken for a failed check.
 

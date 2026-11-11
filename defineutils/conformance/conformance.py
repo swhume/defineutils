@@ -5,7 +5,9 @@ against it: each rule's XPath selects its context nodes and its check yields a V
 offence, which becomes a Location (OID-decorated path, source line, detail) under one Finding
 per failed rule. Rules that need published CDISC content or the datasets are reported as not
 evaluated, and the 13 Submission rules as not applicable when ODM/@def:Context is not
-"Submission", so the result accounts for all 225 rules.
+"Submission", so the result accounts for all 225 rules. The extra checks, defineutils'
+extensions to the CDISC rules, are evaluated too and kept in the extra_* fields, apart from the
+CDISC counts; a failed extra check is an error like a failed rule.
 """
 import os
 from dataclasses import dataclass, field
@@ -16,7 +18,7 @@ from lxml import etree
 
 from . import report
 from .document import Document
-from .rules import all_rules, REGISTRY, RULES_SOURCE
+from .rules import all_rules, extra_rules, EXTRAS, EXTRAS_SOURCE, REGISTRY, RULES_SOURCE
 
 ERROR = "error"
 
@@ -42,14 +44,15 @@ class Location:
 
 @dataclass
 class Finding:
-    rule: str                   # the CDISC rule id, e.g. "73"
+    rule: str                   # the CDISC rule id, e.g. "73", or an extra check's, e.g. "X1"
     severity: str               # always "error"; kept so the reports share a finding shape
     element: str                # e.g. "ItemRef"
     attribute: Union[str, None]     # e.g. "MethodOID"
-    source_type: str            # "Schema" | "Specification", from the spreadsheet
-    message: str                # the CDISC rule text
-    cdisc_message: str          # the CDISC message template, as published
+    source_type: str            # "Schema" | "Specification", from the spreadsheet; "Extension" for an extra check
+    message: str                # the CDISC rule text, or the extra check's
+    cdisc_message: Union[str, None]     # the CDISC message template, as published; None for an extra check
     locations: list = field(default_factory=list)
+    basis: Union[str, None] = None      # what an extra check rests on; None for a CDISC rule
 
 
 @dataclass
@@ -58,20 +61,25 @@ class ConformanceResult:
     define_version: Union[str, None]    # MetaDataVersion/@def:DefineVersion as written, e.g. "2.1.9"
     context: Union[str, None]           # ODM/@def:Context as written
     rules_source: str
-    rule_count: int                     # every registered rule, 225
+    rule_count: int                     # every registered CDISC rule, 225
     findings: list                      # Finding per failed rule, ascending rule id
     passed: list                        # rule ids evaluated with no violation
     not_applicable: list                # rule ids skipped because of ODM/@def:Context
     not_evaluated: list                 # (rule id, requirement) pairs
     skipped: list = field(default_factory=list)     # rule ids left out by a rules / skip_rules selection
+    extras_source: str = EXTRAS_SOURCE
+    extra_count: int = 0                            # every extra check, 4
+    extra_findings: list = field(default_factory=list)  # Finding per failed extra check, ascending id
+    extra_passed: list = field(default_factory=list)    # extra check ids evaluated with no violation
+    extra_skipped: list = field(default_factory=list)   # extra check ids left out by the selection
 
     @property
     def errors(self) -> list:
-        return [f for f in self.findings if f.severity == ERROR]
+        return [f for f in self.findings + self.extra_findings if f.severity == ERROR]
 
     @property
     def has_errors(self) -> bool:
-        return any(f.severity == ERROR for f in self.findings)
+        return bool(self.errors)
 
     @property
     def failed_count(self) -> int:
@@ -84,6 +92,14 @@ class ConformanceResult:
     @property
     def evaluated_count(self) -> int:
         return len(self.findings) + len(self.passed)
+
+    @property
+    def extra_occurrence_count(self) -> int:
+        return sum(len(f.locations) for f in self.extra_findings)
+
+    @property
+    def extra_evaluated_count(self) -> int:
+        return len(self.extra_findings) + len(self.extra_passed)
 
 
 class DefineConformanceChecker:
@@ -102,13 +118,18 @@ class DefineConformanceChecker:
 
     @classmethod
     def all_rules(cls) -> list:
-        """the registry: every rule with its CDISC metadata, in ascending id order"""
+        """the registry: every CDISC rule with its metadata, in ascending id order"""
         return all_rules()
+
+    @classmethod
+    def extra_rules(cls) -> list:
+        """the extra checks, defineutils' extensions to the CDISC rules, in ascending id order"""
+        return extra_rules()
 
     def check(self) -> ConformanceResult:
         """
-        loads the define.xml and evaluates every rule; the result is cached so the report
-        methods and the CLI exit code do not re-parse the file
+        loads the define.xml and evaluates every rule and extra check; the result is cached so
+        the report methods and the CLI exit code do not re-parse the file
         :return: ConformanceResult
         """
         if self._result is not None:
@@ -116,27 +137,43 @@ class DefineConformanceChecker:
         doc = self._load()
         findings, passed, not_applicable, not_evaluated, skipped = [], [], [], [], []
         for rule in all_rules():
-            if (self.rules is not None and rule.id not in self.rules) or rule.id in self.skip_rules:
+            if self._left_out(rule):
                 skipped.append(rule.id)
             elif rule.requires:
                 not_evaluated.append((rule.id, rule.requires))
             elif rule.context and doc.context != rule.context:
                 not_applicable.append(rule.id)
             else:
-                locations = [Location(path=doc.path(v.node), line=doc.line(v.node), detail=v.detail)
-                             for node in doc.xpath(doc.root, rule.select) for v in rule.check(doc, node)]
-                if locations:
-                    findings.append(Finding(rule=rule.id, severity=ERROR, element=rule.element,
-                                            attribute=rule.attribute, source_type=rule.source_type,
-                                            message=rule.text, cdisc_message=rule.cdisc_message,
-                                            locations=locations))
-                else:
-                    passed.append(rule.id)
+                self._evaluate(doc, rule, findings, passed)
+        extra_findings, extra_passed, extra_skipped = [], [], []
+        for rule in extra_rules():
+            if self._left_out(rule):
+                extra_skipped.append(rule.id)
+            else:
+                self._evaluate(doc, rule, extra_findings, extra_passed)
         self._result = ConformanceResult(
             define_file=str(self.define_file), define_version=doc.define_version, context=doc.context,
             rules_source=RULES_SOURCE, rule_count=len(REGISTRY), findings=findings, passed=passed,
-            not_applicable=not_applicable, not_evaluated=not_evaluated, skipped=skipped)
+            not_applicable=not_applicable, not_evaluated=not_evaluated, skipped=skipped,
+            extra_count=len(EXTRAS), extra_findings=extra_findings, extra_passed=extra_passed,
+            extra_skipped=extra_skipped)
         return self._result
+
+    def _left_out(self, rule) -> bool:
+        return (self.rules is not None and rule.id not in self.rules) or rule.id in self.skip_rules
+
+    @staticmethod
+    def _evaluate(doc: Document, rule, findings: list, passed: list) -> None:
+        """runs one rule, adding a Finding to findings or its id to passed"""
+        locations = [Location(path=doc.path(v.node), line=doc.line(v.node), detail=v.detail)
+                     for node in doc.xpath(doc.root, rule.select) for v in rule.check(doc, node)]
+        if locations:
+            findings.append(Finding(rule=rule.id, severity=ERROR, element=rule.element,
+                                    attribute=rule.attribute, source_type=rule.source_type,
+                                    message=rule.text, cdisc_message=rule.cdisc_message,
+                                    locations=locations, basis=rule.basis))
+        else:
+            passed.append(rule.id)
 
     def check_to_string(self, max_locations: int = 5) -> str:
         """
@@ -195,7 +232,7 @@ class DefineConformanceChecker:
         if ids is None:
             return None
         ids = {str(i).strip() for i in ids if str(i).strip()}
-        unknown = ids - set(REGISTRY)
+        unknown = ids - set(REGISTRY) - set(EXTRAS)
         if unknown:
             raise DefineConformanceError(f"Unknown rule id(s): {', '.join(sorted(unknown))}. "
                                          f"Run defineconform --list-rules to see the rule ids.")

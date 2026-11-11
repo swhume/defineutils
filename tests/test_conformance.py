@@ -16,8 +16,8 @@ from lxml import etree
 from defineutils.conformance import (DefineConformanceChecker, DefineConformanceError,
                                      DefineConformanceLoadError)
 from defineutils.conformance.document import Document, qualified
-from defineutils.conformance.rules import (all_rules, METADATA, REGISTRY, SUBMISSION, NEEDS_CT, NEEDS_IG,
-                                           NEEDS_DATASETS)
+from defineutils.conformance.rules import (all_rules, extra_rule, extra_rules, EXTENSION, EXTRAS, METADATA,
+                                           REGISTRY, SUBMISSION, NEEDS_CT, NEEDS_IG, NEEDS_DATASETS, RegistryError)
 from defineutils.conformance.rules import checks
 from defineutils.conformance.rules import values as V
 from defineutils.conformance.rules.order import expected_child_order
@@ -35,7 +35,8 @@ NOT_EVALUATED = {"179": NEEDS_CT, "186": NEEDS_CT, "187": NEEDS_CT, "192": NEEDS
 SUBMISSION_RULES = {"31", "70", "93", "96", "108", "119", "125", "128", "131", "147", "154", "168", "176"}
 
 # what tests/define.xml fails: rule id -> occurrences
-BASELINE = {"73": 2, "153": 11, "159": 30, "240": 1, "249": 11}
+BASELINE = {"73": 2, "159": 30, "240": 1, "249": 11}
+EXTRA_IDS = ["X1", "X2", "X3", "X4"]
 
 MDV_CHILDREN = ["def:Standards", "def:AnnotatedCRF", "def:SupplementalDoc", "def:ValueListDef",
                 "def:WhereClauseDef", "ItemGroupDef", "ItemDef", "CodeList", "MethodDef", "def:CommentDef",
@@ -220,6 +221,25 @@ def test_rule_metadata_is_joined():
 def test_rule_121_uses_its_rule_text_as_the_message():
     # the spreadsheet's message cell is empty for 121
     assert METADATA["121"]["message"] == METADATA["121"]["rule"]
+
+
+def test_the_extra_checks_are_kept_apart_from_the_cdisc_rules():
+    extras = extra_rules()
+    assert [r.id for r in extras] == EXTRA_IDS
+    assert not set(EXTRAS) & set(REGISTRY) and not set(EXTRAS) & set(METADATA)
+    for r in extras:
+        etree.XPath(r.select, namespaces=NS)
+        assert r.extra and r.status == "extra" and r.source_type == EXTENSION
+        assert r.text and r.basis and r.cdisc_message is None
+    assert REGISTRY["73"].basis is None and not REGISTRY["73"].extra
+
+
+def test_an_extra_check_id_must_be_x_and_a_number_and_registered_once():
+    with pytest.raises(RegistryError, match="not X followed by a number"):
+        extra_rule("73", "ItemDef", None, "//odm:ItemDef", checks.required_attr("OID"), text="t", basis="b")
+    with pytest.raises(RegistryError, match="registered twice"):
+        extra_rule("X1", "ItemDef", None, "//odm:ItemDef", checks.required_attr("OID"), text="t", basis="b")
+    assert [r.id for r in extra_rules()] == EXTRA_IDS
 
 
 def test_expected_child_order_comes_from_the_define_model():
@@ -410,8 +430,9 @@ def test_baseline_on_the_sdtm_sample():
     assert result.not_applicable == sorted(SUBMISSION_RULES, key=int)
     assert dict(result.not_evaluated) == NOT_EVALUATED
     assert result.context == "Other" and result.define_version == "2.1.9"
-    assert result.rule_count == 225 and result.evaluated_count == 197 and len(result.passed) == 192
-    assert result.has_errors and result.occurrence_count == 55
+    assert result.rule_count == 225 and result.evaluated_count == 197 and len(result.passed) == 193
+    assert result.has_errors and result.occurrence_count == 44
+    assert result.extra_count == 4 and result.extra_findings == [] and result.extra_passed == EXTRA_IDS
 
 
 def test_baseline_locations_carry_lines_and_paths():
@@ -428,12 +449,14 @@ def test_the_conformant_fixture_passes_every_evaluated_rule():
     assert result.findings == []
     assert result.not_applicable == [] and result.context == "Submission"
     assert result.evaluated_count == 210 and len(result.not_evaluated) == 15
+    assert result.extra_findings == [] and result.extra_evaluated_count == 4
+    assert not result.has_errors
 
 
 def test_the_adam_sample_passes():
     # a Submission-context CDISC sample with ARM content and a Study OID containing "/"
     result = DefineConformanceChecker(adam_file()).check()
-    assert result.findings == []
+    assert result.findings == [] and result.extra_findings == []
     assert result.evaluated_count == 210
 
 
@@ -624,7 +647,7 @@ MUTATIONS = {
     "148": (lambda t: set_attr(item(t, "IT.DM.AGE"), "def:CommentOID", "COM.NONE"), ()),
     "151": (lambda t: set_attr(one(item(t, "IT.DM.SEX"), "odm:CodeListRef"), "CodeListOID", "CL.NONE"), ()),
     "154": (lambda t: remove(origin(t, "IT.DM.STUDYID")), ("155",)),
-    "155": (lambda t: remove(origin(t, "IT.SUPPDM.QVAL.RACEOTH")), ("154",)),
+    "155": (lambda t: remove(origin(t, "IT.SUPPDM.QVAL.RACEOTH")), ()),
     "162": (lambda t: duplicate(one(item(t, "IT.SUPPDM.QVAL"), "def:ValueListRef")), ()),
     "163": (lambda t: set_attr(one(item(t, "IT.SUPPDM.QVAL"), "def:ValueListRef"), "ValueListOID", "VL.NONE"), ()),
     "164": (lambda t: del_attr(one(item(t, "IT.SUPPDM.QVAL"), "def:ValueListRef"), "ValueListOID"), ()),
@@ -633,7 +656,7 @@ MUTATIONS = {
     "242": (lambda t: set_attr(item_ref(t, "IG.DM", "IT.DM.AGE"), "def:HasNoData", "Yes"), ()),
     # def:Origin
     "158": (lambda t: del_attr(origin(t, "IT.DM.AGE"), "Type"), ()),
-    "159": (lambda t: remove(one(origin(t, "IT.DM.SEX"), "def:DocumentRef")), ()),
+    "159": (lambda t: remove(one(origin(t, "IT.DM.SEX"), "def:DocumentRef")), ("44",)),
     "160": (lambda t: set_attr(origin(t, "IT.DM.AGE"), "Type", "Other"), ()),
     "161": (lambda t: set_attr(origin(t, "IT.DM.USUBJID"), "Source", "CRO"), ()),
     "243": (lambda t: _two_descriptions(origin(t, "IT.DM.AGE")), ()),
@@ -666,10 +689,10 @@ MUTATIONS = {
     "173": (lambda t: del_attr(codelist(t, "CL.MEDDRA"), "DataType"), ()),
     "174": (lambda t: set_attr(codelist(t, "CL.MEDDRA"), "DataType", "string"), ()),
     "175": (lambda t: set_attr(codelist(t, "CL.SEX"), "SASFormatName", "SEX"), ()),
-    "176": (lambda t: del_attr(codelist(t, "CL.SEX"), "def:StandardOID"), ()),
+    "176": (lambda t: del_attr(codelist(t, "CL.SEX"), "def:StandardOID"), ("153",)),
     "177": (lambda t: set_attr(codelist(t, "CL.SEX"), "def:CommentOID", "COM.NONE"), ()),
     "244": (lambda t: _two_descriptions(codelist(t, "CL.SEX")), ()),
-    "249": (lambda t: remove(one(codelist(t, "CL.SEX"), "odm:Alias")), ("153",)),
+    "249": (lambda t: remove(one(codelist(t, "CL.SEX"), "odm:Alias")), ()),
     "250": (lambda t: duplicate(one(t, "//odm:ExternalCodeList")), ()),
     # EnumeratedItem
     "178": (lambda t: set_attr(one(t, "//odm:EnumeratedItem"), "def:ExtendedValue", "No"), ()),
@@ -730,6 +753,82 @@ def test_mutation_fails_exactly_that_rule(rule_id, edited_define):
     result = DefineConformanceChecker(path).check()
     assert {f.rule for f in result.findings} == {rule_id, *also}
     assert all(loc.line for f in result.findings for loc in f.locations)
+
+
+def _twin_dataset(t):
+    """a copy of DM under another OID and leaf ID, so only the dataset name is shared"""
+    dm = group(t, "IG.DM")
+    twin = copy.deepcopy(dm)
+    set_attr(twin, "OID", "IG.DM2")
+    set_attr(twin, "def:ArchiveLocationID", "LF.DM2")
+    set_attr(one(twin, "def:leaf"), "ID", "LF.DM2")
+    dm.addnext(twin)
+
+
+def _item_twice_in_one_dataset(t):
+    twin = copy.deepcopy(item_ref(t, "IG.DM", "IT.DM.AGE"))
+    set_attr(twin, "OrderNumber", "5")
+    item_ref(t, "IG.DM", "IT.DM.SEX").addnext(twin)
+
+
+def _predecessor_without_description(t):
+    set_attr(origin(t, "IT.DM.STUDYID"), "Type", "Predecessor")
+
+
+# extra check id -> (the edit of the conformant fixture, the CDISC rules the edit must also fail)
+EXTRA_MUTATIONS = {
+    "X1": (_twin_dataset, ()),
+    "X2": (_item_twice_in_one_dataset, ()),
+    "X3": (lambda t: set_attr(item_ref(t, "IG.DM", "IT.DM.SEX"), "OrderNumber", "3"), ()),
+    "X4": (_predecessor_without_description, ()),
+}
+
+
+def test_the_extra_mutation_table_covers_every_extra_check():
+    assert sorted(EXTRA_MUTATIONS) == EXTRA_IDS
+
+
+@pytest.mark.parametrize("extra_id", EXTRA_IDS)
+def test_extra_mutation_fails_exactly_that_check(extra_id, edited_define):
+    edit, also = EXTRA_MUTATIONS[extra_id]
+    path = edited_define(edit, source=conformant_file())
+    result = DefineConformanceChecker(path).check()
+    assert [f.rule for f in result.extra_findings] == [extra_id]
+    assert {f.rule for f in result.findings} == set(also)
+    assert result.has_errors and all(loc.line for f in result.extra_findings for loc in f.locations)
+
+
+def test_rule_44_needs_one_page_reference_per_origin_not_per_document_ref(edited_define):
+    # a second def:DocumentRef, to a document that is not the aCRF, needs no pages of its own
+    path = edited_define(lambda t: add(origin(t, "IT.DM.SEX"), "def:DocumentRef", attrs={"leafID": "LF.RG"}),
+                         source=conformant_file())
+    assert DefineConformanceChecker(path).check().findings == []
+
+
+def test_rules_48_and_50_apply_to_a_named_destination_without_page_refs(edited_define):
+    # the spec's def:PDFPageRef table and P21's DD0037, not the Rule column's "and Type is PhysicalRef"
+    def named_destination_pointing_nowhere(t):
+        set_attr(page_ref(t, "IT.DM.SEX"), "Type", "NamedDestination")
+        del_attr(page_ref(t, "IT.DM.SEX"), "PageRefs")
+    path = edited_define(named_destination_pointing_nowhere, source=conformant_file())
+    assert {f.rule for f in DefineConformanceChecker(path).check().findings} == {"48", "50"}
+
+
+def test_an_external_codelist_needs_neither_standard_oid_nor_is_non_standard(edited_define):
+    # rule 153 follows the spec's CodeList table: "Except for External CodeLists, ..."
+    path = edited_define(lambda t: del_attr(codelist(t, "CL.MEDDRA"), "def:IsNonStandard"), source=conformant_file())
+    assert DefineConformanceChecker(path).check().findings == []
+
+
+def _origin_on_the_variable_only(t):
+    qval = item(t, "IT.SUPPDM.QVAL")
+    qval.insert(qval.index(one(qval, "def:ValueListRef")), origin(t, "IT.SUPPDM.QVAL.RACEOTH"))
+
+
+def test_a_value_level_item_may_rely_on_its_variables_origin(edited_define):
+    # rule 154 is about variables: the spec leaves def:Origin at the variable or value level to the sponsor
+    path = edited_define(_origin_on_the_variable_only, source=conformant_file())
+    assert DefineConformanceChecker(path).check().findings == []
 
 
 # ---------------------------------------------------------------------------------------------
@@ -828,9 +927,13 @@ def test_rule_selection():
     assert [f.rule for f in result.findings] == ["73"]
     assert result.passed == ["110"] and result.not_evaluated == [("179", NEEDS_CT)]
     assert len(result.skipped) == 222 and result.evaluated_count == 2
-    skipped = DefineConformanceChecker(define_file(), skip_rules=["73", "159"]).check()
-    assert {f.rule for f in skipped.findings} == {"153", "240", "249"}
+    assert result.extra_skipped == EXTRA_IDS and result.extra_evaluated_count == 0
+    skipped = DefineConformanceChecker(define_file(), skip_rules=["73", "159", "X2"]).check()
+    assert {f.rule for f in skipped.findings} == {"240", "249"}
     assert skipped.skipped == ["73", "159"]
+    assert skipped.extra_skipped == ["X2"] and skipped.extra_passed == ["X1", "X3", "X4"]
+    extra_only = DefineConformanceChecker(define_file(), rules=["X3"]).check()
+    assert extra_only.evaluated_count == 0 and extra_only.extra_passed == ["X3"]
 
 
 def test_result_is_cached():
@@ -843,9 +946,19 @@ def test_cli_exit_code_failed(run_cli):
     assert completed.returncode == 1
     assert b"[73]   ItemRef/@MethodOID   (2 occurrences)" in completed.stdout
     assert b"NOT APPLICABLE (13 rules)" in completed.stdout
-    assert b"225 rules: 197 evaluated, 192 passed, 5 failed (55 occurrences), 13 not applicable, 15 not evaluated" \
+    assert b"225 rules: 197 evaluated, 193 passed, 4 failed (44 occurrences), 13 not applicable, 15 not evaluated" \
         in completed.stdout
+    assert b"4 extra checks: 4 evaluated, 4 passed, 0 failed (0 occurrences)" in completed.stdout
     assert completed.stderr == b""
+
+
+def test_cli_exit_code_failed_on_an_extra_check_alone(edited_define, run_cli):
+    path = edited_define(EXTRA_MUTATIONS["X3"][0], source=conformant_file())
+    completed = run_cli("defineconform", "-d", str(path))
+    assert completed.returncode == 1
+    assert b"No CDISC rule violations found." in completed.stdout
+    assert b"EXTRA CHECKS (1 extra check, 2 occurrences)" in completed.stdout
+    assert run_cli("defineconform", "-d", str(path), "--skip-rules", "X3").returncode == 0
 
 
 def test_cli_exit_code_passed(run_cli):
@@ -891,8 +1004,11 @@ def test_cli_list_rules(run_cli):
     completed = run_cli("defineconform", "--list-rules")
     assert completed.returncode == 0
     lines = completed.stdout.decode().splitlines()
-    assert len(lines) == 225
+    assert len(lines) == 229
     assert lines[0].startswith("  1  document") and "ALL elements" in lines[0]
+    assert re.match(r" X1  extra\s+ItemGroupDef/@Name\s+Extension\s+2.1 only\s+Name attribute value must be unique",
+                    lines[225])
+    assert lines[228].startswith(" X4  extra") and "Basis: Define-XML 2.1 section 4.3.2" in lines[228]
     assert re.search(r"^ 70  submission\s+ItemRef/@KeySequence", "\n".join(lines), re.MULTILINE)
     assert re.search(r"^179  needs ct\s+EnumeratedItem/@CodedValue\s+Specification\s+2.1 only", "\n".join(lines),
                      re.MULTILINE)
@@ -902,7 +1018,7 @@ def test_cli_json(run_cli):
     completed = run_cli("defineconform", "-d", str(define_file()), "--json")
     assert completed.returncode == 1
     report = json.loads(completed.stdout)
-    assert report["counts"] == {"rules": 225, "evaluated": 197, "passed": 192, "failed": 5, "occurrences": 55,
+    assert report["counts"] == {"rules": 225, "evaluated": 197, "passed": 193, "failed": 4, "occurrences": 44,
                                 "not_applicable": 13, "not_evaluated": 15, "skipped": 0}
     assert {f["rule"]: len(f["locations"]) for f in report["findings"]} == BASELINE
     first = report["findings"][0]
@@ -914,26 +1030,31 @@ def test_cli_json(run_cli):
     assert first["cdisc_message"].startswith("ItemRef[@ItemOID] is missing the MethodOID")
     assert report["not_evaluated"][0] == {"rule": "67", "requires": "ig"}
     assert report["context"] == "Other" and report["define_version"] == "2.1.9"
+    assert report["extra_checks"] == {"source": "defineutils extra checks",
+                                      "counts": {"checks": 4, "evaluated": 4, "passed": 4, "failed": 0,
+                                                 "occurrences": 0, "skipped": 0},
+                                      "findings": [], "passed": EXTRA_IDS, "skipped": []}
 
 
 def test_cli_out_file_round_trip(tmp_path, run_cli):
     out_file = tmp_path / "report.json"
     completed = run_cli("defineconform", "-d", str(define_file()), "-o", str(out_file), "--json")
     assert completed.returncode == 1 and completed.stdout == b""
-    assert json.loads(out_file.read_text(encoding="utf-8"))["counts"]["failed"] == 5
+    assert json.loads(out_file.read_text(encoding="utf-8"))["counts"]["failed"] == 4
     text_file = tmp_path / "report.txt"
     run_cli("defineconform", "-d", str(define_file()), "-o", str(text_file), "-L", "0")
     text = text_file.read_text(encoding="utf-8")
-    assert text.count("- line ") == 55 and "... and" not in text
+    assert text.count("- line ") == 44 and "... and" not in text
 
 
 def test_cli_rules_and_skip_rules(run_cli):
     completed = run_cli("defineconform", "-d", str(define_file()), "--rules", "73,110")
     assert completed.returncode == 1
-    assert b"SKIPPED (223 rules)" in completed.stdout
+    assert b"SKIPPED (223 rules, 4 extra checks)" in completed.stdout
+    assert b"\n  X1, X2, X3, X4\n" in completed.stdout
     assert b"225 rules: 2 evaluated, 1 passed, 1 failed (2 occurrences), 0 not applicable, 0 not evaluated, " \
            b"223 skipped" in completed.stdout
-    completed = run_cli("defineconform", "-d", str(define_file()), "--skip-rules", "73,153,159,240,249")
+    completed = run_cli("defineconform", "-d", str(define_file()), "--skip-rules", "73,159,240,249")
     assert completed.returncode == 0
     assert b"No conformance rule violations found." in completed.stdout
 
@@ -974,18 +1095,34 @@ def test_text_report_truncates_locations():
     text = DefineConformanceChecker(define_file()).check_to_string(max_locations=2)
     assert "  [159]  def:Origin/@Type   (30 occurrences)" in text
     assert "         ... and 28 more" in text
-    assert text.count("- line ") == 2 + 2 + 2 + 1 + 2
+    assert text.count("- line ") == 2 + 2 + 1 + 2
 
 
 def test_text_report_header_and_sections():
     text = DefineConformanceChecker(define_file()).check_to_string()
     assert text.startswith("Define-XML conformance check\n  File:     ")
     assert "  Version:  Define-XML 2.1.9    Context: Other\n" in text
-    assert "  Rules:    CDISC Define-XML v2.1 Conformance Rules (225)\n" in text
+    assert "  Rules:    CDISC Define-XML v2.1 Conformance Rules (225)\n  Extra:    defineutils extra checks (4)\n" in text
     assert 'Require ODM/@def:Context="Submission"; this document declares "Other":' in text
     assert "  Need CDISC controlled terminology:      179, 186, 187, 192, 201, 202" in text
     assert "  Need implementation-guide metadata:     67, 97, 98, 99, 149, 263, 265, 266" in text
     assert "  Need the datasets:                      76" in text
+
+
+def test_text_report_lists_a_failed_extra_check_apart_with_its_basis(edited_define):
+    path = edited_define(EXTRA_MUTATIONS["X3"][0], source=conformant_file())
+    text = DefineConformanceChecker(path).check_to_string()
+    assert "\nNo CDISC rule violations found.\n\nEXTRA CHECKS (1 extra check, 2 occurrences)\n" \
+           "  Extensions to the CDISC rules; each names its basis.\n" in text
+    assert "  [X3]   ItemRef/@OrderNumber   (2 occurrences)\n" in text
+    assert "         Basis: P21 OD0042; ODM 1.3 Schematron\n" in text
+    assert '@OrderNumber="3" is shared by 2 ItemRef elements under the same ItemGroupDef' in text
+    assert "  4 extra checks: 4 evaluated, 3 passed, 1 failed (2 occurrences)\n" in text
+    report = json.loads(DefineConformanceChecker(path).check_to_json())
+    assert report["counts"]["failed"] == 0 and report["extra_checks"]["counts"]["failed"] == 1
+    finding = report["extra_checks"]["findings"][0]
+    assert finding["source_type"] == "Extension" and finding["cdisc_message"] is None
+    assert finding["basis"] == "P21 OD0042; ODM 1.3 Schematron"
 
 
 def test_check_to_console(capsys):

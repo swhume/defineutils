@@ -25,7 +25,7 @@ defineutils is a Python package for working with CDISC Define-XML v2.1 files. It
 - **definerefs**: Checks OID reference/definition integrity in define.xml files
 - **metrics**: Reports element counts and file/study metrics for define.xml files
 - **defineview**: Renders a define.xml with definehtml and opens it in the default browser (double-click on Windows)
-- **conformance**: Checks define.xml files against the 225 CDISC Define-XML v2.1 conformance rules
+- **conformance**: Checks define.xml files against the 225 CDISC Define-XML v2.1 conformance rules, plus 4 extra checks
 
 ## Commands
 
@@ -73,9 +73,11 @@ uninstalled from the repo root. Every command takes `--version`.
 # --no-methods-table, --prefixes, --length-format, --codelist-items N as needed)
 definehtml -d tests/define.xml -o tests/define.html
 
-# Schema validate a define.xml (add -s for a schema other than the bundled v2.1; -o, --json, -L as needed)
+# Schema validate a define.xml (bundled v2.1 schema, or bundled ARM v1.0 for ARM content; -s for another schema,
+# resolved against the current folder; -o, --json, -L as needed)
 definevalidate -d tests/define.xml
-definevalidate -d tests/define.xml -s cdisc-define-2.0/define2-0-0.xsd
+definevalidate -d tests/define-adam.xml
+definevalidate -d tests/define.xml -s defineutils/validate/schema/cdisc-odm-1.3.2/ODM1-3-2.xsd
 definevalidate -d tests/define.xml --json -o report.json
 
 # Pretty-print a define.xml to a file (omit -o to print to the console; -H limits console lines)
@@ -245,7 +247,16 @@ Rendering tests:
 Define-XML v2.1 schemas in `defineutils/validate/schema/`; the entry point is the module-level `DEFAULT_SCHEMA`
 (`schema/cdisc-define-2.1/define2-1-0.xsd`), used when the `xsd_file` argument (CLI `-s`/`--schema`) is not given. Any
 schema file path is accepted, so a define.xml can be validated against another Define-XML version. The resolved path is
-kept on `self.xsd_file`. Failures that mean the check could not be run at all -- a schema that will not load (the
+kept on `self.xsd_file`.
+- **ARM:** without `xsd_file`, `_default_schema()` scans the define.xml (lxml `iterparse`) and picks `ARM_SCHEMA`
+  (`schema/cdisc-arm-1.0/arm1-0-0.xsd`, which imports the v2.1 schema and adds the ARM elements) when any element is in
+  the ARM namespace. `DEFAULT_SCHEMA` rejects `arm:AnalysisResultDisplays`, so every ARM file used to fail. An explicit
+  `xsd_file` always wins. A define.xml the scan can't read or parse gets `DEFAULT_SCHEMA`, so the constructor still
+  doesn't raise for it; validating reports the problem.
+- `report.display_path()` strips the ODM/Study prefix with a regex, for the same reason as definerefs': the CDISC ADaM
+  sample's Study OID contains `/`.
+
+Failures that mean the check could not be run at all -- a schema that will not load (the
 `XMLSchema` object is built eagerly in `__init__`), a define.xml that is missing or not well-formed, or a report that
 could not be written -- raise `DefineSchemaLoadError`, a subclass of `DefineSchemaValidationError`, so it must be
 caught first where the two are distinguished. Sets exit codes: 0 valid, 1 invalid, 2 could not validate; the report
@@ -277,23 +288,48 @@ result -- keeping the dependency one-way, exactly as `definerefs/report.py` does
 **definepp module**: Uses lxml to re-indent a define.xml. The `DefinePrettyPrinter` class parses with `remove_blank_text=True` and serializes with `pretty_print=True`, a byte-preserving reformat (comments, processing instructions, order and namespaces are retained). It outputs via `pretty_print_to_file()`, `pretty_print_to_string()`, or `pretty_print_to_console()` (with an optional line limit for paging), and raises `DefinePrettyPrintError`. This module bundles no resources.
 
 **definerefs module**: Uses odmlib (`>= 0.2.0`, a runtime dependency) to load the define.xml into the `define_2_1`
-model and check OID reference/definition integrity. `create_oid_checker("define_2_1")` is the authority on *what* to
-check -- its introspected `ref_def` mapping and `skip_attr` / `skip_elem` lists are used as-is, never hand-coded --
-but `DefineRefChecker` does its own recursive traversal of `element.__dict__` rather than calling `verify_oids()`,
-because odmlib raises on the first violation and stores references as sets of OID values, so it can report neither
-every problem nor where each one lives. Two gaps in odmlib 0.2.0 are filled here: the Define-XML `def:leaf` / `leafID`
-/ `def:ArchiveLocationID` ref/def pairs (supplemented with `setdefault`, so a later odmlib that maps them natively
-wins and nothing is double-reported), and uniqueness for the `skip_elem` classes, which odmlib exempts before its
-duplicate test. Reports come from `check_to_string()`, `check_to_file()`, `check_to_console()` and `check_to_json()`;
-errors are dangling references, duplicate OIDs and type mismatches, while orphan definitions are warnings. Raises
-`DefineRefCheckError`, whose load-failure message recommends `definevalidate`. This module bundles no resources
-and sets exit codes (0 clean, 1 errors, 2 could not check).
+model and check OID reference/definition integrity. `create_oid_checker(model)` is the authority on *what* to
+check -- its introspected `ref_def` mapping and `skip_attr` / `skip_elem` lists are used, never hand-coded as a
+table -- but `DefineRefChecker` does its own recursive traversal of `element.__dict__` rather than calling
+`verify_oids()`, because odmlib raises on the first violation and stores references as sets of OID values, so it can
+report neither every problem nor where each one lives. Reports come from `check_to_string()`, `check_to_file()`,
+`check_to_console()` and `check_to_json()`; errors are dangling references, duplicate OIDs and type mismatches, while
+orphan definitions are warnings. Raises `DefineRefCheckError`, whose load-failure message recommends `definevalidate`.
+This module bundles no resources and sets exit codes (0 clean, 1 errors, 2 could not check).
+- **ARM:** the `define_2_1` loader silently drops ARM content, which left its references unchecked and the
+  definitions only ARM refers to reported as orphans. So `__init__` upgrades the default `define_2_1` to `arm_1_0`
+  (odmlib's ARM model, which extends `define_2_1`, loaded with `XMLArmLoader`) when a pre-scan finds an
+  `arm:AnalysisResultDisplays` element. A file that only declares the ARM namespace stays `define_2_1`. An ARM element
+  missing a required attribute therefore fails the strict load and needs `--permissive`.
+- **odmlib 0.2.1's gaps, filled here:**
+  - Unmapped reference attributes (`SUPPLEMENTED_REF_DEF`): the `def:leaf` pairs `leafID` / `def:ArchiveLocationID`,
+    and ARM's `ParameterOID` (an ItemDef; the ARM XSD types it `oid`, not `oidref`). Each is added with `setdefault`
+    and only where the model declares the attribute, so `define_2_1` output is unchanged and a later odmlib that maps
+    one natively wins without double reporting.
+  - For `arm_1_0` only (`_oid_checker()`): `ItemGroupOID` comes out of `skip_attr`, because odmlib's ARM config copies
+    Define-XML 2.1's, which skips it as structural, though ARM's AnalysisDataset uses it as a reference. `ResultDisplay`
+    and `AnalysisResult` go into `skip_elem`, because nothing refers to them.
+  - Uniqueness for the `skip_elem` classes, which odmlib exempts before its duplicate test.
+- `report.display_path()` strips the ODM/Study prefix with a regex rather than splitting on `/`: the CDISC ADaM
+  sample's Study OID contains `/`.
 
 **metrics module**: Uses odmlib to load the define.xml into the `define_2_1` model and report file/study identity,
 a count for every element type, and a per-dataset table. `DefineMetrics.collect()` returns a `MetricsResult` cached on
 `self._result`; `collect_to_string()` / `_to_file()` / `_to_console()` / `_to_json()` all reuse it. Raises
 `DefineMetricsError`, reusing definerefs' load-failure wording (recommends `definevalidate`, and suggests
 `--permissive` only when a permissive load of that file actually succeeds). Bundles no resources.
+- **ARM:** as in definerefs, `__init__` upgrades the default `define_2_1` to `arm_1_0` when a pre-scan finds an
+  `arm:AnalysisResultDisplays` element; the `define_2_1` loader drops the ARM elements and the `Description`,
+  `def:DocumentRef` etc. inside them (56 elements of the CDISC ADaM sample). The inventory then holds the 9 ARM types
+  too (48 in all), with no ARM-specific code in the walk: `arm_1_0.MetaDataVersion` declares `AnalysisResultDisplays`.
+- Load `arm_1_0` only with `XMLArmLoader` (`_open_define()`). odmlib 0.2.1's `XMLDefineLoader` given `arm_1_0` loads
+  without error but drops every `def:` element and everything inside them.
+- The RESULT DISPLAYS table (`_displays()`, `DisplayMetrics`) and the summary's display/result line appear when the
+  inventory holds `ResultDisplay` (`report._models_displays()`), not when the file has displays: a model with ARM
+  reports none as `RESULT DISPLAYS (0)`, and a `define_2_1` text report stays byte-identical. `--no-datasets` /
+  `show_datasets` does not hide it. The JSON always has `result_displays` (empty without ARM) and the two totals.
+  A display's `datasets` are its distinct ItemGroupOIDs; the text names them from the dataset table, showing an OID it
+  doesn't define as is.
 
 The counted element list is **derived from the model, never hand-coded**: `_element_inventory()` walks the closure of
 child elements reachable from `<model>.ODM` breadth-first over each class's `_elems`, so an element absent from a
@@ -306,7 +342,7 @@ correct and must not be "simplified":
   following `descriptor.element_class` walks the **ODM 1.3.2** shape: `ItemDef` gains `Question`, `ExternalQuestion`,
   `MeasurementUnitRef` and `ErrorMessage` and loses `def:Origin` / `def:ValueListRef`, and `ItemGroupDef` loses
   `def:Class` / `def:leaf`. Nothing raises when this goes wrong; `tests/test_metrics.py` pins the inventory to the
-  model's own class set (39 element types for `define_2_1`).
+  model's own class set (39 element types for `define_2_1`, 48 for `arm_1_0`).
 - The walk is breadth-first because a section is assigned from where an element is *first* reached: `MetaDataVersion`'s
   own children are the `definitions` section, everything deeper is `nested`. `def:leaf` is reachable both ways, and BFS
   puts it with the definitions.
@@ -323,14 +359,23 @@ the traceback on stderr). 1 never judges the file, because a metrics report desc
 **conformance module**: Evaluates the 225 CDISC Define-XML v2.1 conformance rules on an lxml tree, with no odmlib
 checker involved (odmlib drops undeclared children and keeps no line numbers). `DefineConformanceChecker.check()`
 returns a `ConformanceResult` cached on `self._result`; `check_to_string()` / `_to_file()` / `_to_console()` /
-`_to_json()` reuse it, and `all_rules()` (a classmethod) is the registry for `--list-rules`. Loading failures and an
-unwritable report raise `DefineConformanceLoadError`, a subclass of `DefineConformanceError` (also raised for an unknown
-rule id). Exit codes: 0 no rule failed, 1 a rule failed, 2 could not check (including a usage error), **3 an unexpected
-exception** with the traceback on stderr -- the first command with a crash code of its own; `main()` re-raises
-`BrokenPipeError` ahead of its `except Exception`.
+`_to_json()` reuse it, and `all_rules()` plus `extra_rules()` (classmethods) are what `--list-rules` prints. Loading
+failures and an unwritable report raise `DefineConformanceLoadError`, a subclass of `DefineConformanceError` (also
+raised for an unknown rule id). Exit codes: 0 no rule or extra check failed, 1 one did, 2 could not check (including a
+usage error), **3 an unexpected exception** with the traceback on stderr -- the first command with a crash code of its
+own; `main()` re-raises `BrokenPipeError` ahead of its `except Exception`.
 
-The registry (`rules/`): every rule is one `rule(id, element, attribute, select, check, context=, requires=)` call --
-or decorator, for a hand-written check -- in `structure.py`, `datasets.py`, `variables.py`, `codelists.py` or
+Extra checks (`rules/extras.py`) are defineutils' extensions to the CDISC rules, registered with `extra_rule(id, ...,
+text=, basis=)` into `EXTRAS`, never `REGISTRY`. Keep them apart, or the CDISC counts stop being exact:
+- Ids are `X<n>` (`extra_rule()` raises otherwise), so they can't collide with a CDISC id; their text and basis are
+  given at registration, not joined from the JSON, and their `source_type` is `"Extension"`.
+- `all_rules()` and `rule_count` (225) are CDISC only. Extras land in the result's `extra_findings` / `extra_passed` /
+  `extra_skipped`, the text listing's EXTRA CHECKS section and second summary line, and the JSON's `extra_checks`
+  block; the CDISC `counts` and `findings` never include them. `has_errors` (the exit code) does.
+- `--rules` / `--skip-rules` take extra ids too. A new extra needs an `EXTRA_MUTATIONS` entry in the tests.
+
+The registry (`rules/`): every CDISC rule is one `rule(id, element, attribute, select, check, context=, requires=)`
+call -- or decorator, for a hand-written check -- in `structure.py`, `datasets.py`, `variables.py`, `codelists.py` or
 `definitions.py`. `select` is an XPath 1.0 expression (prefixes `odm`, `def`, `xlink`; `xml:` only through
 `doc.attr()`, since lxml rejects the xml prefix in an XPath namespace map) choosing the context nodes, and `check(doc,
 node)` yields a `Violation(node, detail)` per offence. Invariants:
@@ -350,19 +395,29 @@ node)` yields a `Violation(node, detail)` per offence. Invariants:
 - 15 rules carry `requires` (`ct`: 179, 186, 187, 192, 201, 202; `ig`: 67, 97, 98, 99, 149, 263, 265, 266; `datasets`:
   76) and are never run; 13 carry `context="Submission"` (31, 70, 93, 96, 108, 119, 125, 128, 131, 147, 154, 168,
   176) and are *not applicable* unless `ODM/@def:Context="Submission"`. The test suite pins both sets.
-- Rules about "the variable" (55, 147) follow **direct** ItemGroupDef/ItemRef references only; the value-level
-  ItemDefs of QVAL are also named QVAL, and the CDISC ADaM sample gives its value-level ItemDefs no SASFieldName.
-  `doc.owning_item_groups()` follows the value-list hop and is for rules that mean it (84, 142).
+- Rules about "the variable" (55, 147, 154) follow **direct** ItemGroupDef/ItemRef references only; the value-level
+  ItemDefs of QVAL are also named QVAL, the CDISC ADaM sample gives its value-level ItemDefs no SASFieldName, and the
+  spec lets def:Origin sit on the variable or the values. `doc.owning_item_groups()` follows the value-list hop and is
+  for rules that mean it (84, 142).
+- Three rules deliberately do **not** follow their own Rule column; each follows the spec and the matching P21 rule:
+  - **153** ("when there is no CodeList/Alias[@Context="nci:ExtCodeID"]"): the spec's CodeList business rule (P21
+    DD0128). `def:IsNonStandard` is required on every CodeList without `def:StandardOID`, except an
+    ExternalCodeList. A standard CodeList with no NCI Alias fails rule 249 alone.
+  - **48 and 50** ("and Type is PhysicalRef"): the spec's def:PDFPageRef table (P21 DD0037). `FirstPage` and
+    `LastPage` are required whenever `PageRefs` is absent, so a NamedDestination with neither fails.
+- Rule 44 selects the Collected (Investigator/Subject) **def:Origin**, not each def:DocumentRef, as its Rule column
+  reads: one def:PDFPageRef under any of its DocumentRefs suffices, and an origin with no DocumentRef fails 44 and 159.
 - Parsing is `etree.XMLParser(remove_comments=True)`, as in `validate`, so the two agree on lines and child positions.
   A document using the Define-XML 2.0 namespace anywhere is refused (`DefineConformanceLoadError`); a non-ODM root
   loads and fails rule 2 alone.
 - `Document.path()` drops the ODM/Study segments itself rather than splitting the finished path on `/`: the CDISC
   ADaM sample's Study OID is `CDISC-Sample/ADaM`.
 
-Tests: `tests/define_conformant.xml` is a minimal Submission-context document that passes all 210 evaluated rules; the
-`MUTATIONS` table in `tests/test_conformance.py` holds one lxml edit of it per implemented rule with the exact set of
-rules that edit must fail (knock-ons included) -- a new rule needs an entry, or the coverage test fails. The baseline
-on `tests/define.xml` is 73×2, 153×11, 159×30, 240×1, 249×11; `tests/define-adam.xml` passes every evaluated rule.
+Tests: `tests/define_conformant.xml` is a minimal Submission-context document that passes all 210 evaluated rules and
+the 4 extra checks; the `MUTATIONS` table in `tests/test_conformance.py` holds one lxml edit of it per implemented
+rule with the exact set of rules that edit must fail (knock-ons included) -- a new rule needs an entry, or the
+coverage test fails; `EXTRA_MUTATIONS` does the same for the extra checks. The baseline on `tests/define.xml` is
+73×2, 159×30, 240×1, 249×11 with every extra check passing; `tests/define-adam.xml` passes everything evaluated.
 
 **defineview module**: What double-clicking a define.xml runs on Windows, once the user has chosen defineview.exe
 for it with "Open with" (README.md has the user's steps; there is no installer or registry code). `DefineViewer`

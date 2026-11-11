@@ -6,7 +6,12 @@ duck-types the ValidationResult it is handed -- which keeps the dependency one-w
 of an import cycle. It mirrors definerefs/report.py so the two utilities read alike.
 """
 import json
+import re
 from dataclasses import asdict
+
+# the ODM/Study[...] prefix of a collected path, either part optional; matched rather than split
+# on "/", since a Study OID may contain one (the CDISC ADaM sample's is CDISC-Sample/ADaM)
+STUDY_PREFIX = re.compile(r"^/?(?:ODM)?(?:/?Study(?:\[.*?\])?)?(?=/|$)")
 
 
 def display_path(path: str) -> str:
@@ -16,10 +21,7 @@ def display_path(path: str) -> str:
     :param path: the collected path, e.g. "ODM/Study[SDTM]/MetaDataVersion[MDV.1]"
     :return: string
     """
-    segments = [s for s in path.split("/") if s]
-    while segments and (segments[0] == "ODM" or segments[0].split("[")[0] == "Study"):
-        segments.pop(0)
-    return "/".join(segments) or "(document root)"
+    return STUDY_PREFIX.sub("", path).lstrip("/") or "(document root)"
 
 
 def finding_text(element: str, reason: str) -> tuple:

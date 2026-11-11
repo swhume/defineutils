@@ -9,6 +9,7 @@ from defineutils.validate import (DefineSchemaValidator, DefineSchemaValidationE
                                   DefineSchemaLoadError)
 
 ODM_NS = "http://www.cdisc.org/ns/odm/v1.3"
+ARM_NS = "http://www.cdisc.org/ns/arm/v1.0"
 NS = {"odm": ODM_NS}
 
 BAD_DATATYPE = "NOT_A_DATATYPE"
@@ -22,10 +23,21 @@ def define_file() -> Path:
     return data_path() / "define.xml"
 
 
+def adam_file() -> Path:
+    """the CDISC ADaM sample, the only test file with ARM content"""
+    return data_path() / "define-adam.xml"
+
+
 def bundled_schema() -> Path:
     """the Define-XML v2.1 schema shipped in the package -- the default when no schema is given"""
     return (data_path().parent / "defineutils" / "validate" / "schema"
             / "cdisc-define-2.1" / "define2-1-0.xsd")
+
+
+def arm_schema() -> Path:
+    """the ARM v1.0 schema shipped in the package -- the default for a define.xml with ARM content"""
+    return (data_path().parent / "defineutils" / "validate" / "schema"
+            / "cdisc-arm-1.0" / "arm1-0-0.xsd")
 
 
 def odm_schema() -> Path:
@@ -132,6 +144,37 @@ def test_explicit_bundled_schema_validates():
 
     assert validator.xsd_file == bundled_schema()
     assert "is valid" in result
+
+
+def test_default_schema_for_arm_content_is_bundled_arm():
+    validator = DefineSchemaValidator(adam_file())
+
+    assert validator.xsd_file == arm_schema()
+    assert validator.validate().is_valid is True
+    assert "is valid" in validator.validate_define_file()
+
+
+def test_explicit_schema_is_used_for_arm_content():
+    # the Define-XML v2.1 schema has no ARM elements, which is why ARM content gets the ARM schema by default
+    result = DefineSchemaValidator(adam_file(), bundled_schema()).validate()
+
+    assert result.schema_file == str(bundled_schema())
+    assert [(f.check, f.element) for f in result.findings] == [("unexpected_child", "MetaDataVersion")]
+    assert "arm:AnalysisResultDisplays" in result.findings[0].reason
+
+
+def test_arm_schema_reports_invalid_arm_content(tmp_path: Path):
+    tree = etree.parse(str(adam_file()))
+    del next(tree.iter(f"{{{ARM_NS}}}AnalysisResult")).attrib["AnalysisReason"]
+    edited = tmp_path / "edited_adam.xml"
+    tree.write(str(edited), xml_declaration=True, encoding="UTF-8")
+
+    validator = DefineSchemaValidator(edited)
+    result = validator.validate()
+
+    assert validator.xsd_file == arm_schema()
+    assert [(f.check, f.element) for f in result.findings] == [("attribute_error", "AnalysisResult")]
+    assert "AnalysisReason" in result.findings[0].reason
 
 
 def test_custom_schema_validates_matching_document(tmp_path: Path):
@@ -259,6 +302,13 @@ def test_validate_against_other_bundled_schema():
     assert result.error_count == _raw_error_count(define_file(), odm_schema())
 
 
+def test_locations_start_at_the_metadataversion_when_the_study_oid_has_a_slash():
+    # the ADaM sample's Study OID is STDY.www.cdisc.org/CDISC-Sample/ADaM
+    result = DefineSchemaValidator(adam_file(), bundled_schema()).validate()
+
+    assert result.findings[0].locations[0].path == "MetaDataVersion[MDV.CDISC01.ADaMIG.1.1.ADaM.2.1]"
+
+
 def test_result_is_cached():
     validator = DefineSchemaValidator(define_file())
 
@@ -381,6 +431,15 @@ def test_cli_schema_argument_accepted(run_cli):
     completed = run_cli("definevalidate", "-d", str(define_file()), "-s", str(bundled_schema()))
 
     assert completed.returncode == 0
+    assert b"No schema validation errors found." in completed.stdout
+    assert b"Traceback" not in completed.stderr
+
+
+def test_cli_picks_the_arm_schema_for_arm_content(run_cli):
+    completed = run_cli("definevalidate", "-d", str(adam_file()))
+
+    assert completed.returncode == 0
+    assert b"arm1-0-0.xsd" in completed.stdout
     assert b"No schema validation errors found." in completed.stdout
     assert b"Traceback" not in completed.stderr
 

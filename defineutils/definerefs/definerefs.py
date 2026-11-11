@@ -5,14 +5,18 @@ model classes and supplies the ref/def mappings and skip lists, so this module n
 hand-codes a reference table. The traversal, however, is done here rather than via
 verify_oids(): odmlib raises on the first violation and collects references as sets of OID
 values, so a report built on it could name neither every problem nor where each one lives.
+A define.xml with Analysis Results Metadata is checked against odmlib's "arm_1_0" model,
+which extends "define_2_1"; the define_2_1 loader drops the ARM elements.
 """
 import os
+import xml.etree.ElementTree as ET
 from contextlib import nullcontext
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Union
 
 import odmlib
+import odmlib.arm_loader as AL
 import odmlib.define_loader as DL
 import odmlib.loader as LD
 from odmlib import create_oid_checker
@@ -21,12 +25,22 @@ from odmlib.odm_element import ODMElement
 
 from . import report
 
+DEFINE_MODEL = "define_2_1"
+ARM_MODEL = "arm_1_0"
+ARM_RESULT_DISPLAYS = "{http://www.cdisc.org/ns/arm/v1.0}AnalysisResultDisplays"
 # instance attributes odmlib uses for its own bookkeeping; not document content
 SKIP_KEYS = {"_fields", "_attr_ns", "_elems", "_attrs"}
-# Define-XML document-leaf ref/def pairs. odmlib 0.2.0 models leaf/@ID as a plain attribute,
-# so these references are invisible to the introspected mappings; supplemented via setdefault
-# so a later odmlib that maps them natively wins and nothing is reported twice.
-ID_REF_DEF = {"leafID": "leaf", "ArchiveLocationID": "leaf"}
+# reference attributes odmlib 0.2.1 leaves out of its introspected mappings, with the class each
+# names: the model declares def:leaf's ID as a plain attribute, and the ARM schema types
+# ParameterOID as an oid, not an oidref, though the ARM spec makes it the "OID of the ItemDef of
+# the variable PARAMCD". Each is supplemented via setdefault where the model declares it, so a
+# later odmlib that maps it natively wins and nothing is reported twice.
+SUPPLEMENTED_REF_DEF = {"leafID": "leaf", "ArchiveLocationID": "leaf", "ParameterOID": "ItemDef"}
+# odmlib's arm_1_0 skip configuration is Define-XML 2.1's, which skips ItemGroupOID as
+# "guaranteed valid by the file structure"; ARM's AnalysisDataset names its dataset with it
+ARM_CHECKED_ATTRS = ["ItemGroupOID"]
+# nothing refers to a result display or an analysis result, so neither is an orphan
+ARM_UNREFERENCED_ELEMS = ["ResultDisplay", "AnalysisResult"]
 
 UNDEFINED_REFERENCE = "undefined_reference"
 UNDEFINED_DOCUMENT_REFERENCE = "undefined_document_reference"
@@ -89,13 +103,15 @@ class RefCheckResult:
 
 
 class DefineRefChecker:
-    def __init__(self, define_xml_file: Path, model_package: str = "define_2_1",
+    def __init__(self, define_xml_file: Path, model_package: str = DEFINE_MODEL,
                  permissive: bool = False) -> None:
         self.define = Path(define_xml_file)
-        self.model_package = model_package
         self.permissive = permissive
         self._result = None
         self._does_define_file_exist()
+        # define_2_1 is upgraded to arm_1_0 for a file with ARM content, which define_2_1 drops
+        self.model_package = (ARM_MODEL if model_package == DEFINE_MODEL and self._has_arm_content()
+                              else model_package)
 
     def check(self) -> RefCheckResult:
         """
@@ -105,7 +121,7 @@ class DefineRefChecker:
         """
         if self._result is not None:
             return self._result
-        checker = create_oid_checker(self.model_package)
+        checker = self._oid_checker()
         ref_def = self._ref_def_map(checker)
         id_defs = self._id_def_classes(ref_def, checker)
         # the load and the traversal share the permissive context: reading an unset required
@@ -202,12 +218,30 @@ class DefineRefChecker:
         except Exception as e:
             raise DefineRefCheckError(self._load_error_message(e))
 
+    def _has_arm_content(self) -> bool:
+        """
+        scans the define.xml for an arm:AnalysisResultDisplays element. A file that cannot be read
+        or parsed is left to the load, which reports the problem
+        :return: True when the define.xml holds Analysis Results Metadata
+        """
+        try:
+            with open(self.define, "rb") as f:
+                return any(elem.tag == ARM_RESULT_DISPLAYS
+                           for _, elem in ET.iterparse(f, events=("start",)))
+        except (ET.ParseError, OSError):
+            return False
+
     def _open_define(self):
         """
-        opens the define.xml with the odmlib Define-XML loader and builds the model objects
+        opens the define.xml with the odmlib loader for the model (the ARM loader for arm_1_0,
+        otherwise the Define-XML loader) and builds the model objects
         :return: the root ODM object
         """
-        loader = LD.ODMLoader(DL.XMLDefineLoader(model_package=self.model_package))
+        if self.model_package == ARM_MODEL:
+            document_loader = AL.XMLArmLoader(model_package=self.model_package)
+        else:
+            document_loader = DL.XMLDefineLoader(model_package=self.model_package)
+        loader = LD.ODMLoader(document_loader)
         loader.open_odm_document(str(self.define))
         return loader.root()
 
@@ -247,16 +281,31 @@ class DefineRefChecker:
                         "add --permissive.")
         return message
 
+    def _oid_checker(self):
+        """
+        returns odmlib's checker for the model; for arm_1_0, with ItemGroupOID checked and the
+        result displays and analysis results exempt from the orphan check
+        :return: the odmlib DynamicOIDRef checker
+        """
+        if self.model_package != ARM_MODEL:
+            return create_oid_checker(self.model_package)
+        checker = create_oid_checker(self.model_package, extra_skip_elems=ARM_UNREFERENCED_ELEMS)
+        checker.skip_attr = [a for a in checker.skip_attr if a not in ARM_CHECKED_ATTRS]
+        return checker
+
     def _ref_def_map(self, checker) -> dict:
         """
         returns odmlib's introspected reference attribute to definition class mapping,
-        supplemented with the Define-XML document-leaf pairs odmlib 0.2.0 does not model
+        supplemented with the pairs odmlib 0.2.1 does not map for the attributes the model
+        declares: the Define-XML document-leaf pairs, and ARM's ParameterOID
         :param checker: the odmlib DynamicOIDRef checker
         :return: dict of reference attribute name to definition class name
         """
         ref_def = dict(checker.ref_def)
-        for attr, def_class in ID_REF_DEF.items():
-            if def_class in checker.model_classes:
+        declared = {attr for cls in checker.model_classes.values()
+                    for attr in getattr(cls, "_attrs", {})}
+        for attr, def_class in SUPPLEMENTED_REF_DEF.items():
+            if attr in declared and def_class in checker.model_classes:
                 ref_def.setdefault(attr, def_class)
         return ref_def
 

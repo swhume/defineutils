@@ -9,6 +9,7 @@ from defineutils.definerefs import DefineRefChecker, DefineRefCheckError
 
 ODM_NS = "http://www.cdisc.org/ns/odm/v1.3"
 DEF_NS = "http://www.cdisc.org/ns/def/v2.1"
+ARM_NS = "http://www.cdisc.org/ns/arm/v1.0"
 NS = {"odm": ODM_NS, "def": DEF_NS}
 
 
@@ -18,6 +19,11 @@ def data_path() -> Path:
 
 def define_file() -> Path:
     return data_path() / "define.xml"
+
+
+def adam_file() -> Path:
+    # the CDISC ADaM sample, the only test file with ARM content
+    return data_path() / "define-adam.xml"
 
 
 def _mdv(tree):
@@ -345,6 +351,114 @@ def test_nonconformant_checks_with_permissive(nonconformant_define: Path):
     assert result.definition_count == 353
     assert "permissive mode" in checker.check_to_string()
     assert json.loads(checker.check_to_json())["permissive"] is True
+
+
+def _arm(tree, local: str):
+    return next(tree.iter(f"{{{ARM_NS}}}{local}"))
+
+
+def _in_arm(tree, tag: str):
+    # the first such element inside the ARM content, not the Define-XML content before it
+    return next(_arm(tree, "AnalysisResultDisplays").iter(tag))
+
+
+def _duplicate_result_display_oid(tree):
+    displays = list(tree.iter(f"{{{ARM_NS}}}ResultDisplay"))
+    displays[1].set("OID", displays[0].get("OID"))
+
+
+def _edited_adam(tmp_path: Path, edit) -> Path:
+    tree = etree.parse(str(adam_file()))
+    edit(tree)
+    return _write(tree, tmp_path / "edited_adam.xml")
+
+
+def test_check_adam_sample_checks_its_arm_content():
+    # loaded as define_2_1, the sample lost its ARM content: none of its references were checked,
+    # and the seven definitions only ARM refers to were reported as orphans
+    checker = DefineRefChecker(adam_file())
+    result = checker.check()
+
+    assert result.model_package == "arm_1_0"
+    assert result.findings == []
+    assert result.definition_count == 292
+    assert result.reference_count == 387
+    assert {"ItemGroupOID", "ParameterOID"} <= set(result.checked_attributes)
+    assert "ItemGroupOID" not in result.skipped_attributes
+    assert result.unmapped_attributes == []
+    assert "  Model: Define-XML v2.1 with ARM v1.0 (odmlib arm_1_0," in checker.check_to_string()
+
+
+def test_check_adam_sample_without_arm_content_stays_define_2_1(tmp_path: Path):
+    # the ARM namespace is still declared on the root, but there is no ARM content to check
+    def drop_arm(tree):
+        displays = _arm(tree, "AnalysisResultDisplays")
+        displays.getparent().remove(displays)
+
+    result = DefineRefChecker(_edited_adam(tmp_path, drop_arm)).check()
+
+    assert result.model_package == "define_2_1"
+    assert result.errors == []
+    assert _checks(result, "orphan_definition") == {
+        "COM.JOIN-ADSL-ADAE", "WC.Table_14-3.01.R.1.ADQSADAS", "WC.Table_14-3.01.R.2.ADQSADAS",
+        "WC.Table_14-5.02.R.1.ADAE", "WC.Table_14-5.02.R.1.ADSL"}
+    assert _checks(result, "orphan_document_leaf") == {"LF.CSR", "LF.at14-5-02.sas"}
+
+
+ARM_BREAKS = [
+    # (edit of the ADaM sample, check, OID, attribute, element holding the reference)
+    pytest.param(lambda t: _arm(t, "AnalysisDatasets").set(f"{{{DEF_NS}}}CommentOID", "COM.NONE"),
+                 "undefined_reference", "COM.NONE", "CommentOID", "AnalysisDatasets", id="CommentOID"),
+    pytest.param(lambda t: _arm(t, "AnalysisDataset").set("ItemGroupOID", "IG.NONE"),
+                 "undefined_reference", "IG.NONE", "ItemGroupOID", "AnalysisDataset", id="ItemGroupOID"),
+    pytest.param(lambda t: _arm(t, "AnalysisVariable").set("ItemOID", "IT.NONE"),
+                 "undefined_reference", "IT.NONE", "ItemOID", "AnalysisVariable", id="ItemOID"),
+    pytest.param(lambda t: _arm(t, "AnalysisResult").set("ParameterOID", "IT.NONE"),
+                 "undefined_reference", "IT.NONE", "ParameterOID", "AnalysisResult", id="ParameterOID"),
+    pytest.param(lambda t: _arm(t, "AnalysisResult").set("ParameterOID", "CL.AGEU"),
+                 "type_mismatch", "CL.AGEU", "ParameterOID", "AnalysisResult", id="ParameterOID-CodeList"),
+    pytest.param(lambda t: _in_arm(t, f"{{{DEF_NS}}}WhereClauseRef").set("WhereClauseOID", "WC.NONE"),
+                 "undefined_reference", "WC.NONE", "WhereClauseOID", "WhereClauseRef", id="WhereClauseOID"),
+    pytest.param(lambda t: _in_arm(t, f"{{{DEF_NS}}}DocumentRef").set("leafID", "LF.NONE"),
+                 "undefined_document_reference", "LF.NONE", "leafID", "DocumentRef", id="leafID"),
+    pytest.param(_duplicate_result_display_oid,
+                 "duplicate_oid", "RD.Table_14-3.01", None, "ResultDisplay", id="ResultDisplay-OID"),
+]
+
+
+@pytest.mark.parametrize("edit, check, oid, attribute, element", ARM_BREAKS)
+def test_check_reports_broken_arm_references(edit, check, oid, attribute, element, tmp_path: Path):
+    result = DefineRefChecker(_edited_adam(tmp_path, edit)).check()
+
+    assert [(f.check, f.oid, f.attribute, f.locations[0].element) for f in result.errors] == [
+        (check, oid, attribute, element)]
+
+
+def test_locations_start_at_the_metadataversion_when_the_study_oid_has_a_slash(tmp_path: Path):
+    # the ADaM sample's Study OID is STDY.www.cdisc.org/CDISC-Sample/ADaM
+    edited = _edited_adam(tmp_path, lambda t: _arm(t, "AnalysisResult").set("ParameterOID", "IT.NONE"))
+
+    dangling = DefineRefChecker(edited).check().errors[0]
+
+    assert dangling.locations[0].path == ("MetaDataVersion[MDV.CDISC01.ADaMIG.1.1.ADaM.2.1]/"
+                                          "AnalysisResultDisplays/ResultDisplay[RD.Table_14-3.01]/"
+                                          "AnalysisResult[AR.Table_14-3.01.R.1]")
+
+
+def test_nonconformant_arm_content_raises_without_permissive(tmp_path: Path):
+    # loaded as define_2_1, an ARM element missing a required attribute was silently dropped
+    edited = _edited_adam(tmp_path, lambda t: _arm(t, "AnalysisResult").attrib.pop("AnalysisReason"))
+
+    with pytest.raises(DefineRefCheckError) as excinfo:
+        DefineRefChecker(edited).check()
+
+    message = str(excinfo.value)
+    assert "into the Define-XML v2.1 with ARM v1.0 model" in message
+    assert "AnalysisReason" in message
+    assert "--permissive" in message
+    result = DefineRefChecker(edited, permissive=True).check()
+    assert result.model_package == "arm_1_0"
+    assert result.findings == []
 
 
 def test_cli_exit_code_clean(run_cli):
